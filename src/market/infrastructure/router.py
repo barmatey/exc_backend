@@ -43,12 +43,9 @@ class ConnectionManager:
     def disconnect(self, websocket: WebSocket):
         self.active_connections.remove(websocket)
 
-    async def send_personal_message(self, message: str, websocket: WebSocket):
-        await websocket.send_text(message)
-
     async def broadcast(self, message: str):
         for connection in self.active_connections:
-            await connection.send_text(message)
+            await connection.send_json(message)
 
 
 manager = ConnectionManager()
@@ -65,9 +62,13 @@ templates = Jinja2Templates(directory=Path("D:/Projects/Python/Exchange/backend/
 #         return MarketSchema.from_market(market)
 
 
-@router_market.get("/")
-async def get(request: Request):
-    return templates.TemplateResponse("template.html", {'request': request})
+async def send_order(order: domain.Order) -> domain.Market:
+    async with db.get_as() as session:
+        boot = Bootstrap(session)
+        market_service = boot.get_market_service()
+        market = await market_service.get_market_by_ticker(order.ticker)
+        market.send_order(order)
+        return market
 
 
 @router_market.websocket("/ws/{client_id}")
@@ -76,6 +77,7 @@ async def websocket_endpoint(websocket: WebSocket, client_id: int):
     try:
         while True:
             data = await websocket.receive_json()
-            print(data, type(data))
+            market = await send_order(order=domain.Order(**data))
+            await manager.broadcast(MarketSchema.from_market(market).model_dump())
     except WebSocketDisconnect:
         manager.disconnect(websocket)

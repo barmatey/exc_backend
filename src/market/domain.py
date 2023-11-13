@@ -67,6 +67,17 @@ class Market(BaseModel):
                 result[key] += order.quantity
         return result
 
+    def send_order(self, order: Order):
+        if order.direction == 'BUY':
+            if order.dtype == 'LIMIT':
+                self.send_buy_limit_order(order)
+                return
+        elif order.direction == 'SELL':
+            if order.dtype == 'LIMIT':
+                self.send_sell_limit_order(order)
+                return
+        raise ValueError(f'{order}')
+
     def send_buy_limit_order(self, order: Order):
         order = order.model_copy()
         if order.dtype != 'LIMIT':
