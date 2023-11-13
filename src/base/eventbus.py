@@ -1,5 +1,5 @@
 from collections import deque
-from typing import Generic, TypeVar, Callable, Sequence
+from typing import Generic, TypeVar, Callable, Sequence, Optional
 from uuid import UUID, uuid4
 
 from loguru import logger
@@ -18,8 +18,8 @@ class Created(Event, Generic[T]):
 
 
 class Updated(Event, Generic[T]):
-    old_entity: T
     actual_entity: T
+    old_entity: Optional[T] = None
 
 
 class Deleted(Event, Generic[T]):

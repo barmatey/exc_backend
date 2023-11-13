@@ -5,12 +5,13 @@ from uuid import UUID
 from sortedcontainers import SortedDict
 from pydantic import Field, ConfigDict, PrivateAttr, BaseModel
 
-from base import eventbus
+from src.base import eventbus
 from src.base.model import Entity
 from src.core import Ticker
 
 OrderType = Literal['MARKET', 'LIMIT']
 OrderDirection = Literal['BUY', 'SELL']
+OrderStatus = Literal['PENDING', 'COMPLETED', 'CANCELED']
 
 
 class Order(Entity):
@@ -21,6 +22,7 @@ class Order(Entity):
     price: float
     quantity: int
     created: datetime
+    status: OrderStatus = 'PENDING'
 
 
 class Transaction(Entity):
@@ -44,9 +46,10 @@ class Market(BaseModel):
         for order in orders:
             self.__push_order_in_deque(order)
             self.events.parse_events()
-        if self._buyers.peekitem(-1)[0] >= self._sellers.peekitem(0)[0]:
-            raise Exception(f'buyers max price({self._buyers.peekitem(-1)[0]}) '
-                            f'>= sellers min  price ({self._sellers.peekitem(0)[0]})')
+        if len(self._buyers) and len(self._sellers):
+            if self._buyers.peekitem(-1)[0] >= self._sellers.peekitem(0)[0]:
+                raise Exception(f'buyers max price({self._buyers.peekitem(-1)[0]}) '
+                                f'>= sellers min  price ({self._sellers.peekitem(0)[0]})')
 
     @property
     def events(self):
@@ -83,7 +86,7 @@ class Market(BaseModel):
             if order.dtype == 'LIMIT':
                 self.send_sell_limit_order(order)
                 return
-        raise ValueError(f'{order }')
+        raise ValueError(f'{order}')
 
     def send_buy_limit_order(self, order: Order):
         order = order.model_copy()
@@ -150,11 +153,15 @@ class Market(BaseModel):
         if order.quantity <= cparty.quantity:
             quantity = order.quantity
             order.quantity = 0
+            order.status = 'COMPLETED'
             cparty.quantity -= quantity
+            self.events.push_event(eventbus.Created(key='OrderCreated', entity=order))
         else:
             quantity = cparty.quantity
             cparty.quantity = 0
             order.quantity -= quantity
+            self.events.push_event(eventbus.Updated(key='OrderUpdated', actual_entity=cparty))
+
         buy, sell = (order.account, cparty.account) if order.direction == 'BUY' else (cparty.account, order.account)
         self._transactions.append(
             Transaction(

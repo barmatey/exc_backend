@@ -11,6 +11,7 @@ class OrderModel(Base):
     __tablename__ = "order"
     account: Mapped[UUID] = mapped_column(String(64), nullable=False)
     ticker: Mapped[str] = mapped_column(String(32), nullable=False)
+    status: Mapped[str] = mapped_column(String(16), nullable=False)
     dtype: Mapped[str] = mapped_column(String(16), nullable=False)
     direction: Mapped[str] = mapped_column(String(8), nullable=False)
     price: Mapped[float] = mapped_column(Integer, nullable=False)
@@ -31,6 +32,7 @@ class OrderModel(Base):
             price=self.price,
             quantity=self.quantity,
             created=self.created,
+            status=self.status,
         )
 
     @classmethod
@@ -44,4 +46,5 @@ class OrderModel(Base):
             price=entity.price,
             quantity=entity.quantity,
             created=entity.created,
+            status=entity.status,
         )

@@ -31,13 +31,13 @@ class ConnectionManager:
 manager = ConnectionManager()
 
 
-# @router_market.get('/{ticker}')
-# async def get_market(ticker: Ticker, get_as=Depends(db.get_as)) -> MarketSchema:
-#     async with get_as as session:
-#         boot = Bootstrap(session)
-#         market_service = boot.get_market_service()
-#         market = await market_service.get_market_by_ticker(ticker)
-#         return MarketSchema.from_market(market)
+@router_market.get('/{ticker}')
+async def get_market(ticker: Ticker, get_as=Depends(db.get_as)) -> MarketSchema:
+    async with get_as as session:
+        boot = Bootstrap(session)
+        market_service = boot.get_market_service()
+        market = await market_service.get_market_by_ticker(ticker)
+        return MarketSchema.from_market(market)
 
 
 async def send_order(order: domain.Order) -> domain.Market:

@@ -8,3 +8,6 @@ class OrderHandler:
 
     async def handle_order_created(self, event: eventbus.Created[domain.Order]):
         await self._repo.add_many([event.entity])
+
+    async def handle_order_updated(self, event: eventbus.Updated[domain.Order]):
+        await self._repo.update_one(event.actual_entity)
