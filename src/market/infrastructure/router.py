@@ -31,9 +31,8 @@ class ConnectionManager:
 manager = ConnectionManager()
 
 
-@router_market.get('/{ticker}')
 async def get_market(ticker: Ticker, get_as=Depends(db.get_as)) -> MarketSchema:
-    async with get_as as session:
+    async with db.get_as() as session:
         boot = Bootstrap(session)
         market_service = boot.get_market_service()
         market = await market_service.get_market_by_ticker(ticker)
@@ -58,12 +57,13 @@ async def send_order(order: domain.Order) -> domain.Market:
 
 
 @router_market.websocket("/ws/{client_id}")
-async def websocket_endpoint(websocket: WebSocket, client_id: int):
+async def websocket_endpoint(websocket: WebSocket, client_id: str):
     await manager.connect(websocket)
+    market = await get_market('string')
+    await manager.broadcast(market.model_dump())
     try:
         while True:
             data = await websocket.receive_json()
-            print(data)
             market = await send_order(order=domain.Order(**data))
             await manager.broadcast(MarketSchema.from_market(market).model_dump())
     except WebSocketDisconnect:
