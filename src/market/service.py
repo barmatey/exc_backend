@@ -1,4 +1,5 @@
 from abc import ABC
+from typing import Optional
 
 from src.base.repo import Repository
 from ..base.repo.repository import OrderBy
@@ -25,4 +26,5 @@ class MarketService:
 
     async def get_market_by_ticker(self, ticker: Ticker) -> domain.Market:
         orders = await self._order_repo.get_many(filter_by={'ticker': ticker})
-        return domain.Market(ticker=ticker, orders=orders)
+        market = domain.Market(ticker=ticker, orders=orders)
+        return market
