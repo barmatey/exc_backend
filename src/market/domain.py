@@ -5,6 +5,7 @@ from uuid import UUID
 from sortedcontainers import SortedDict
 from pydantic import Field, ConfigDict, PrivateAttr, BaseModel
 
+from base import eventbus
 from src.base.model import Entity
 from src.core import Ticker
 
@@ -36,14 +37,20 @@ class Market(BaseModel):
     _buyers: SortedDict[float, deque[Order]] = PrivateAttr(default_factory=SortedDict)
     _sellers: SortedDict[float, deque[Order]] = PrivateAttr(default_factory=SortedDict)
     _transactions: list[Transaction] = PrivateAttr(default_factory=list)
+    _events: eventbus.EventStore = PrivateAttr(default_factory=eventbus.EventStore)
 
     def __init__(self, orders: list[Order], **data):
         super().__init__(**data)
         for order in orders:
             self.__push_order_in_deque(order)
+            self.events.parse_events()
         if self._buyers.peekitem(-1)[0] >= self._sellers.peekitem(0)[0]:
             raise Exception(f'buyers max price({self._buyers.peekitem(-1)[0]}) '
                             f'>= sellers min  price ({self._sellers.peekitem(0)[0]})')
+
+    @property
+    def events(self):
+        return self._events
 
     @property
     def transactions(self):
@@ -76,7 +83,7 @@ class Market(BaseModel):
             if order.dtype == 'LIMIT':
                 self.send_sell_limit_order(order)
                 return
-        raise ValueError(f'{order}')
+        raise ValueError(f'{order }')
 
     def send_buy_limit_order(self, order: Order):
         order = order.model_copy()
@@ -123,6 +130,7 @@ class Market(BaseModel):
         if queue.get(order.price) is None:
             queue[order.price] = deque()
         queue[order.price].append(order)
+        self.events.push_event(event=eventbus.Created(key='OrderCreated', entity=order))
 
     def __update_best_sellers(self):
         best_sellers = deque(x for x in self._sellers.peekitem(0)[1] if x.quantity > 0)

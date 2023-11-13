@@ -2,7 +2,7 @@ import uvicorn
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 
-from src.market.infrastructure.router import router_market, router_order
+from src.market.infrastructure.router import router_market
 
 app = FastAPI()
 
@@ -19,7 +19,6 @@ app.add_middleware(
 )
 
 app.include_router(router_market)
-app.include_router(router_order)
 
 if __name__ == "__main__":
     uvicorn.run(app, host="127.0.0.1", port=9999)

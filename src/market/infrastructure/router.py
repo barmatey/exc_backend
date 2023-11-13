@@ -1,30 +1,10 @@
-from pathlib import Path
-
 from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect, Request
-from fastapi.templating import Jinja2Templates
-from starlette.responses import HTMLResponse
 
 from src import db
 from src.core import Ticker
 
 from .schema import *
 from .bootstrap import Bootstrap
-
-router_order = APIRouter(
-    prefix='/order',
-    tags=['Order'],
-)
-
-
-@router_order.post('/')
-async def create_order(data: OrderSchema, get_as=Depends(db.get_as)) -> OrderSchema:
-    async with get_as as session:
-        boot = Bootstrap(session)
-        order_service = boot.get_order_service()
-        result = await order_service.create_order(data.to_entity())
-        await session.commit()
-        return result
-
 
 router_market = APIRouter(
     prefix='/market',
@@ -50,8 +30,6 @@ class ConnectionManager:
 
 manager = ConnectionManager()
 
-templates = Jinja2Templates(directory=Path("D:/Projects/Python/Exchange/backend/src/temp"))
-
 
 # @router_market.get('/{ticker}')
 # async def get_market(ticker: Ticker, get_as=Depends(db.get_as)) -> MarketSchema:
@@ -68,6 +46,14 @@ async def send_order(order: domain.Order) -> domain.Market:
         market_service = boot.get_market_service()
         market = await market_service.get_market_by_ticker(order.ticker)
         market.send_order(order)
+
+        queue = boot.get_queue()
+        queue.extend(market.events.parse_events())
+
+        bus = boot.get_eventbus()
+        await bus.run()
+
+        await session.commit()
         return market
 
 
@@ -77,6 +63,7 @@ async def websocket_endpoint(websocket: WebSocket, client_id: int):
     try:
         while True:
             data = await websocket.receive_json()
+            print(data)
             market = await send_order(order=domain.Order(**data))
             await manager.broadcast(MarketSchema.from_market(market).model_dump())
     except WebSocketDisconnect:
