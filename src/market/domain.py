@@ -32,6 +32,7 @@ class Transaction(Entity):
     quantity: int
     buyer: UUID
     seller: UUID
+    model_config = ConfigDict(frozen=True)
 
 
 class Market(BaseModel):
@@ -96,6 +97,8 @@ class Market(BaseModel):
             raise ValueError
         if order.ticker != self.ticker:
             raise ValueError
+        if order.quantity <= 0:
+            raise ValueError
 
         while order.quantity:
             # If the lower seller price is higher than buyer limit then push order in deque
@@ -115,6 +118,8 @@ class Market(BaseModel):
         if order.direction != 'SELL':
             raise ValueError
         if order.ticker != self.ticker:
+            raise ValueError
+        if order.quantity <= 0:
             raise ValueError
 
         while order.quantity:
@@ -150,7 +155,7 @@ class Market(BaseModel):
             self._buyers.popitem()
 
     def __match_orders_and_create_transaction(self, order: Order, cparty: Order):
-        if order.quantity <= cparty.quantity:
+        if order.quantity < cparty.quantity:
             quantity = order.quantity
             order.quantity = 0
             cparty.quantity -= quantity
