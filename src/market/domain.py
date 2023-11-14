@@ -153,12 +153,13 @@ class Market(BaseModel):
         if order.quantity <= cparty.quantity:
             quantity = order.quantity
             order.quantity = 0
-            order.status = 'COMPLETED'
             cparty.quantity -= quantity
+            self.events.push_event(eventbus.Updated(key='OrderUpdated', entity=cparty))
         else:
             quantity = cparty.quantity
             cparty.quantity = 0
             order.quantity -= quantity
+            self.events.push_event(eventbus.Deleted(key='OrderCompleted', entity=cparty))
 
         buy, sell = (order.account, cparty.account) if order.direction == 'BUY' else (cparty.account, order.account)
         self._transactions.append(

@@ -28,4 +28,5 @@ class Bootstrap:
         bus = eventbus.EventBus(self._queue)
         bus.register('OrderCreated', handler.handle_order_created)
         bus.register('OrderUpdated', handler.handle_order_updated)
+        bus.register('OrderCompleted', handler.handle_order_completed)
         return bus

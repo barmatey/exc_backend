@@ -10,4 +10,7 @@ class OrderHandler:
         await self._repo.add_many([event.entity])
 
     async def handle_order_updated(self, event: eventbus.Updated[domain.Order]):
-        await self._repo.update_one(event.actual_entity)
+        await self._repo.update_one(event.entity)
+
+    async def handle_order_completed(self, event: eventbus.Deleted[domain.Order]):
+        await self._repo.remove_many(filter_by={'uuid': event.entity.uuid})

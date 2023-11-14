@@ -18,8 +18,7 @@ class Created(Event, Generic[T]):
 
 
 class Updated(Event, Generic[T]):
-    actual_entity: T
-    old_entity: Optional[T] = None
+    entity: T
 
 
 class Deleted(Event, Generic[T]):
@@ -29,13 +28,19 @@ class Deleted(Event, Generic[T]):
 class EventStore:
     def __init__(self):
         self._events = []
+        self._uniques = {}
+
+    def push_unique_event(self, key: str, event: Event):
+        self._uniques[key] = event
 
     def push_event(self, event: Event):
         self._events.append(event)
 
     def parse_events(self) -> list[Event]:
         events = self._events
+        events.extend(self._uniques.values())
         self._events = []
+        self._uniques = {}
         return events
 
 

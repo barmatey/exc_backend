@@ -20,6 +20,7 @@ class OrderModel(Base):
 
     @staticmethod
     def key_converter(key: str):
+        key = 'id' if key == 'uuid' else key
         return key
 
     def to_entity(self) -> domain.Order:
