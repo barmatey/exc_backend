@@ -1,4 +1,5 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+from loguru import logger
 
 from src import db
 
@@ -62,3 +63,5 @@ async def websocket_endpoint(websocket: WebSocket, ticker: str):
             await manager.broadcast(MarketSchema.from_entity(market).model_dump())
     except WebSocketDisconnect:
         manager.disconnect(websocket)
+    except Exception as err:
+        logger.error(f'{err}')
