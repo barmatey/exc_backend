@@ -33,7 +33,7 @@ class Account:
 
     @property
     def sell_deals_amount(self):
-        return self.sell_deals_amount
+        return self._sell_deals_amount
 
     @property
     def total_assets(self):
