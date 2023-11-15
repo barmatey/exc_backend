@@ -46,10 +46,10 @@ class AccountGatewayM(market_handlers.AccountGateway):
     async def change_accounts_data(self, trs: market_domain.Transaction):
         acc_repo = acc_bootstrap.Bootstrap(self._session).get_account_repo()
 
-        buyer = await acc_commands.GetAccountByUuid(trs.buyer, acc_repo).execute()
+        buyer: acc_domain.Account = await acc_commands.GetAccountByUuid(trs.buyer, acc_repo).execute()
         buyer.reflect_purchase(trs.amount)
         await acc_commands.UpdateAccount(buyer, acc_repo).execute()
 
-        seller = await acc_commands.GetAccountByUuid(trs.seller, acc_repo).execute()
+        seller: acc_domain.Account = await acc_commands.GetAccountByUuid(trs.seller, acc_repo).execute()
         seller.reflect_sale(trs.amount)
         await acc_commands.UpdateAccount(seller, acc_repo).execute()

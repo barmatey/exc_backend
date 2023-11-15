@@ -24,6 +24,10 @@ class Order(Entity):
     created: datetime
     status: OrderStatus = 'PENDING'
 
+    @property
+    def amount(self) -> float:
+        return self.price * self.quantity
+
 
 class Transaction(Entity):
     ticker: Ticker
