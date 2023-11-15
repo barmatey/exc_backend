@@ -14,3 +14,12 @@ class OrderHandler:
 
     async def handle_order_completed(self, event: eventbus.Deleted[domain.Order]):
         await self._repo.remove_many(filter_by={'uuid': event.entity.uuid})
+
+
+class TransactionHandler:
+    def __init__(self, repo: service.Repository[domain.Transaction]):
+        self._repo = repo
+
+    async def handle_transaction_created(self, event: eventbus.Created[domain.Transaction]):
+        await self._repo.add_many([event.entity])
+

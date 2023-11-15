@@ -42,7 +42,7 @@ class Market(BaseModel):
     _transactions: list[Transaction] = PrivateAttr(default_factory=list)
     _events: eventbus.EventStore = PrivateAttr(default_factory=eventbus.EventStore)
 
-    def __init__(self, orders: list[Order], **data):
+    def __init__(self, orders: list[Order], transactions: list[Transaction] = None, **data):
         super().__init__(**data)
         for order in orders:
             self.__push_order_in_deque(order)
@@ -51,6 +51,8 @@ class Market(BaseModel):
             if self._buyers.peekitem(-1)[0] >= self._sellers.peekitem(0)[0]:
                 raise Exception(f'buyers max price({self._buyers.peekitem(-1)[0]}) '
                                 f'>= sellers min  price ({self._sellers.peekitem(0)[0]})')
+        if transactions is not None:
+            self._transactions = transactions
 
     @property
     def events(self):
@@ -109,6 +111,8 @@ class Market(BaseModel):
                 best_sellers: deque[Order] = self._sellers.peekitem(0)[1]
                 for seller in best_sellers:
                     self.__match_orders_and_create_transaction(order, seller)
+                    if not order.quantity:
+                        break
                 self.__update_best_sellers()
 
     def send_sell_limit_order(self, order: Order):
@@ -131,6 +135,8 @@ class Market(BaseModel):
                 best_buyers: deque[Order] = self._buyers.peekitem(-1)[1]
                 for buyer in best_buyers:
                     self.__match_orders_and_create_transaction(order, buyer)
+                    if not order.quantity:
+                        break
                 self.__update_best_buyers()
 
     def __push_order_in_deque(self, order: Order):
@@ -167,13 +173,14 @@ class Market(BaseModel):
             self.events.push_event(eventbus.Deleted(key='OrderCompleted', entity=cparty))
 
         buy, sell = (order.account, cparty.account) if order.direction == 'BUY' else (cparty.account, order.account)
-        self._transactions.append(
-            Transaction(
-                date=datetime.now(),
-                buyer=buy,
-                seller=sell,
-                price=cparty.price,
-                quantity=quantity,
-                ticker=order.ticker,
-            )
+
+        transaction = Transaction(
+            date=datetime.now(),
+            buyer=buy,
+            seller=sell,
+            price=cparty.price,
+            quantity=quantity,
+            ticker=order.ticker,
         )
+        self._transactions.append(transaction)
+        self._events.push_event(eventbus.Created(key='TransactionCreated', entity=transaction))

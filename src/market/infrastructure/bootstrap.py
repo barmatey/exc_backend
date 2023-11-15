@@ -15,18 +15,26 @@ class Bootstrap:
     def get_order_repo(self) -> Repository[domain.Order]:
         return PostgresRepo(session=self._session, model=postgres.OrderModel)
 
+    def get_transaction_repo(self) -> Repository[domain.Transaction]:
+        return PostgresRepo(session=self._session, model=postgres.TransactionModel)
+
     def get_order_service(self):
         repo = self.get_order_repo()
         return service.OrderService(repo)
 
     def get_market_service(self):
         repo = self.get_order_repo()
-        return service.MarketService(repo)
+        trs_repo = self.get_transaction_repo()
+        return service.MarketService(repo, trs_repo)
 
     def get_eventbus(self) -> eventbus.EventBus:
-        handler = handlers.OrderHandler(self.get_order_repo())
         bus = eventbus.EventBus(self._queue)
+
+        handler = handlers.OrderHandler(self.get_order_repo())
         bus.register('OrderCreated', handler.handle_order_created)
         bus.register('OrderUpdated', handler.handle_order_updated)
         bus.register('OrderCompleted', handler.handle_order_completed)
+
+        handler = handlers.TransactionHandler(self.get_transaction_repo())
+        bus.register('TransactionCreated', handler.handle_transaction_created)
         return bus
