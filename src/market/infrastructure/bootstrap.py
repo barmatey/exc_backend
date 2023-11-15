@@ -1,7 +1,7 @@
-from base import eventbus
+from src.base import eventbus
 from src.base.repo import Repository, PostgresRepo
 from src.market import domain, service, handlers
-from src.market.infrastructure import postgres
+from src.market.infrastructure import postgres, gateway
 
 
 class Bootstrap:
@@ -18,6 +18,9 @@ class Bootstrap:
     def get_transaction_repo(self) -> Repository[domain.Transaction]:
         return PostgresRepo(session=self._session, model=postgres.TransactionModel)
 
+    def get_deal_gateway(self) -> handlers.DealGateway:
+        return gateway.DealGatewayM(self._session)
+
     def get_market_service(self):
         repo = self.get_order_repo()
         trs_repo = self.get_transaction_repo()
@@ -31,6 +34,6 @@ class Bootstrap:
         bus.register('OrderUpdated', handler.handle_order_updated)
         bus.register('OrderCompleted', handler.handle_order_completed)
 
-        handler = handlers.TransactionHandler(self.get_transaction_repo())
+        handler = handlers.TransactionHandler(self.get_transaction_repo(), self.get_deal_gateway())
         bus.register('TransactionCreated', handler.handle_transaction_created)
         return bus

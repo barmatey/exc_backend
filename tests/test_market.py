@@ -5,7 +5,7 @@ from src.market import domain
 
 
 class TestMarket:
-    market = domain.Market(ticker='ABC')
+    market = domain.Market(ticker='ABC', orders=[])
 
     def test_send_buy_limit_order_without_seller_counterparty(self):
         market = self.market

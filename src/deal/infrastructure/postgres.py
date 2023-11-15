@@ -9,7 +9,7 @@ from src.deal import domain
 
 class DealModel(Base):
     __tablename__ = 'deal'
-    account: Mapped[UUID] = mapped_column(String(64), nullable=False)
+    account: Mapped[str] = mapped_column(String(64), nullable=False)
     ticker: Mapped[str] = mapped_column(String(32), nullable=False)
     status: Mapped[str] = mapped_column(String(16), nullable=False)
     transaction: Mapped[str] = mapped_column(String(64), nullable=False)
@@ -33,7 +33,7 @@ class DealModel(Base):
     @classmethod
     def from_entity(cls, entity: domain.Deal):
         return cls(
-            id=str(entity.uuid),
+            id=entity.uuid,
             account=str(entity.account),
             ticker=entity.ticker,
             status=entity.status,
