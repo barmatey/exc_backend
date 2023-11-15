@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Literal
 from uuid import UUID
 from sortedcontainers import SortedDict
-from pydantic import Field, ConfigDict, PrivateAttr, BaseModel
+from pydantic import ConfigDict, PrivateAttr, BaseModel
 
 from src.base import eventbus
 from src.base.model import Entity

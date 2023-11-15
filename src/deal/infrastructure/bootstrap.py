@@ -1,6 +1,6 @@
 from src.base import eventbus
 from src.base.repo import Repository, PostgresRepo
-from src.deal import domain, handlers
+from src.deal import domain
 from src.deal.infrastructure import postgres
 
 
