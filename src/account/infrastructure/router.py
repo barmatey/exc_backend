@@ -20,3 +20,10 @@ async def create_account(data: schema.AccountSchema, get_as=Depends(db.get_as)) 
         await commands.CreateAccount(account=acc, repo=repo).execute()
         await session.commit()
         return schema.AccountSchema.from_entity(acc)
+
+
+@router_account.put("/{account_uuid}")
+async def update_account(data: schema.AccountSchema, get_as=Depends(db.get_as)) -> schema.AccountSchema:
+    async with get_as as session:
+        boot = bootstrap.Bootstrap(session)
+        repo = boot.get_account_repo()
