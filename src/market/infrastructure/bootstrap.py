@@ -18,10 +18,6 @@ class Bootstrap:
     def get_transaction_repo(self) -> Repository[domain.Transaction]:
         return PostgresRepo(session=self._session, model=postgres.TransactionModel)
 
-    def get_order_service(self):
-        repo = self.get_order_repo()
-        return service.OrderService(repo)
-
     def get_market_service(self):
         repo = self.get_order_repo()
         trs_repo = self.get_transaction_repo()
