@@ -19,16 +19,24 @@ class OrderHandler:
 
 
 class DealGateway(ABC):
+    @abstractmethod
     async def create_deals_from_transaction(self, trs: domain.Transaction):
         raise NotImplemented
 
 
+class AccountGateway(ABC):
+    @abstractmethod
+    async def change_accounts_data(self, trs: domain.Transaction):
+        raise NotImplemented
+
+
 class TransactionHandler:
-    def __init__(self, trs_repo: service.Repository[domain.Transaction], deal_gw: DealGateway):
+    def __init__(self, trs_repo: service.Repository[domain.Transaction], deal_gw: DealGateway, acc_gw: AccountGateway):
         self._repo = trs_repo
         self._deal_gw = deal_gw
+        self._acc_gw = acc_gw
 
     async def handle_transaction_created(self, event: eventbus.Created[domain.Transaction]):
         await self._repo.add_many([event.entity])
+        await self._acc_gw.change_accounts_data(event.entity)
         await self._deal_gw.create_deals_from_transaction(event.entity)
-

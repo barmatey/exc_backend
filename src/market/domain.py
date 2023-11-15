@@ -34,6 +34,10 @@ class Transaction(Entity):
     seller: UUID
     model_config = ConfigDict(frozen=True)
 
+    @property
+    def amount(self) -> float:
+        return self.price * self.quantity
+
 
 class Market(BaseModel):
     ticker: Ticker
