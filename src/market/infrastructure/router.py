@@ -23,9 +23,13 @@ class ConnectionManager:
     def disconnect(self, websocket: WebSocket):
         self.active_connections.remove(websocket)
 
-    async def broadcast(self, message: str):
+    async def broadcast(self, message: dict):
         for connection in self.active_connections:
             await connection.send_json(message)
+
+    @staticmethod
+    async def send_personal_message(message: dict, websocket: WebSocket):
+        await websocket.send_json(message)
 
 
 manager = ConnectionManager()
@@ -58,9 +62,9 @@ async def send_order(order: domain.Order) -> domain.Market:
 
 @router_market.websocket("/ws/{ticker}")
 async def websocket_endpoint(websocket: WebSocket, ticker: str):
-    market = await get_market('string')
+    market = await get_market(ticker)
     await manager.connect(websocket)
-    await manager.broadcast(market.model_dump())
+    await manager.send_personal_message(market.model_dump(), websocket)
     try:
         while True:
             data = await websocket.receive_json()

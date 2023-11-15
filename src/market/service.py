@@ -27,6 +27,6 @@ class MarketService:
 
     async def get_market_by_ticker(self, ticker: Ticker) -> domain.Market:
         orders = await self._order_repo.get_many(filter_by={'ticker': ticker, 'status': 'PENDING'})
-        transactions = await self._transaction_repo.get_many({'ticker': ticker}, OrderBy('date', asc=False), 0, 100)
+        transactions = await self._transaction_repo.get_many({'ticker': ticker}, OrderBy('date', asc=True), 0, 100)
         market = domain.Market(ticker=ticker, orders=orders, transactions=transactions)
         return market
