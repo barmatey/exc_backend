@@ -8,7 +8,7 @@ from alembic import context
 
 from src.base.repo.postgres import Base
 from src.market.infrastructure import postgres as market_postgres
-
+from src.deal.infrastructure import postgres as deal_postgres
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
