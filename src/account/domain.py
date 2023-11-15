@@ -17,6 +17,18 @@ class Account:
         self._sell_deals_amount = sda
         self.uuid = uuid
 
+    def __str__(self):
+        return (
+            f'Account\n'
+            f'uuid:\t{self.uuid}\n'
+            f'cash:\t{self._cash}\n'
+            f'bda:\t{self._buy_deals_amount}\n'
+            f'sda:\t{self._sell_deals_amount}'
+        )
+
+    def __repr__(self):
+        return self.__str__()
+
     @staticmethod
     def validate(cash, bda, sda):
         assert cash >= 0
