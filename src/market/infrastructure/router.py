@@ -1,7 +1,6 @@
-from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect, Request
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
 from src import db
-from src.core import Ticker
 
 from .schema import *
 from .bootstrap import Bootstrap
