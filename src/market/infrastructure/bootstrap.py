@@ -21,6 +21,9 @@ class Bootstrap:
     def get_deal_gateway(self) -> handlers.DealGateway:
         return gateway.DealGatewayM(self._session)
 
+    def get_acc_gateway(self) -> handlers.AccountGateway:
+        return gateway.AccountGatewayM(self._session)
+
     def get_market_service(self):
         repo = self.get_order_repo()
         trs_repo = self.get_transaction_repo()
@@ -34,6 +37,10 @@ class Bootstrap:
         bus.register('OrderUpdated', handler.handle_order_updated)
         bus.register('OrderCompleted', handler.handle_order_completed)
 
-        handler = handlers.TransactionHandler(self.get_transaction_repo(), self.get_deal_gateway())
+        handler = handlers.TransactionHandler(
+            self.get_transaction_repo(),
+            self.get_deal_gateway(),
+            self.get_acc_gateway(),
+        )
         bus.register('TransactionCreated', handler.handle_transaction_created)
         return bus
