@@ -79,7 +79,7 @@ class MarketSchema(BaseModel):
     transactions: list[TransactionSchema]
 
     @classmethod
-    def from_market(cls, market: domain.Market):
+    def from_entity(cls, market: domain.Market):
         buy_level = [(price, quantity) for price, quantity in market.buy_level.items()]
         sell_level = [(price, quantity) for price, quantity in market.sell_level.items()]
         return cls(

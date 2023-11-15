@@ -1,6 +1,6 @@
 from src.base import eventbus
 from src.base.repo import Repository, PostgresRepo
-from src.market import domain, service, handlers
+from src.market import domain, handlers
 from src.market.infrastructure import postgres, gateway
 
 
@@ -24,10 +24,10 @@ class Bootstrap:
     def get_acc_gateway(self) -> handlers.AccountGateway:
         return gateway.AccountGatewayM(self._session)
 
-    def get_market_service(self):
-        repo = self.get_order_repo()
-        trs_repo = self.get_transaction_repo()
-        return service.MarketService(repo, trs_repo)
+    def get_command_factory(self) -> handlers.CommandFactory:
+        factory = handlers.CommandFactory(self.get_order_repo(), self.get_transaction_repo(), self.get_deal_gateway(),
+                                          self.get_acc_gateway(), self._queue)
+        return factory
 
     def get_eventbus(self) -> eventbus.EventBus:
         bus = eventbus.EventBus(self._queue)

@@ -53,3 +53,8 @@ class AccountGatewayM(market_handlers.AccountGateway):
         seller: acc_domain.Account = await acc_commands.GetAccountByUuid(trs.seller, acc_repo).execute()
         seller.reflect_sale(trs.amount)
         await acc_commands.UpdateAccount(seller, acc_repo).execute()
+
+    async def check_account_has_permission_to_send_order(self, order: market_domain.Order) -> bool:
+        acc_repo = acc_bootstrap.Bootstrap(self._session).get_account_repo()
+        acc: acc_domain.Account = await acc_commands.GetAccountByUuid(order.uuid, acc_repo).execute()
+        return order.amount <= acc.cash

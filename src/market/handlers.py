@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 
 from src.base.repo import Repository
 from src.base import eventbus
-from . import domain, service
+from . import domain
 from ..base.repo.repository import OrderBy
 from ..core import Ticker
 
@@ -23,7 +23,54 @@ class AccountGateway(ABC):
         raise NotImplemented
 
 
-class CommandHandler:
+class GetMarketByTickerCommand:
+    def __init__(
+            self,
+            ticker: Ticker,
+            order_repo: Repository[domain.Order],
+            trs_repo: Repository[domain.Transaction],
+    ):
+        self._ticker = ticker
+        self._order_repo = order_repo
+        self._trs_repo = trs_repo
+
+    async def execute(self) -> domain.Market:
+        ticker = self._ticker
+        orders = await self._order_repo.get_many(filter_by={'ticker': ticker, 'status': 'PENDING'})
+        transactions = await self._trs_repo.get_many({'ticker': ticker}, OrderBy('date', asc=True), 0, 100)
+        market = domain.Market(ticker=ticker, orders=orders, transactions=transactions)
+        return market
+
+
+class SendOrderCommand:
+    def __init__(
+            self,
+            order: domain.Order,
+            order_repo: Repository[domain.Order],
+            trs_repo: Repository[domain.Transaction],
+            deal_gw: DealGateway,
+            acc_gw: AccountGateway,
+            queue: eventbus.Queue,
+    ):
+        self._order = order
+        self._order_repo = order_repo
+        self._trs_repo = trs_repo
+        self._deal_gw = deal_gw
+        self._acc_gw = acc_gw
+        self._queue = queue
+
+    async def execute(self) -> domain.Market:
+        order = self._order
+        orders = await self._order_repo.get_many(filter_by={'ticker': order.ticker, 'status': 'PENDING'})
+        market = domain.Market(ticker=order.ticker, orders=orders)
+        if not await self._acc_gw.check_account_has_permission_to_send_order(order):
+            raise PermissionError
+        market.send_order(order)
+        self._queue.extend(market.events.parse_events())
+        return market
+
+
+class CommandFactory:
     def __init__(
             self,
             order_repo: Repository[domain.Order],
@@ -32,25 +79,17 @@ class CommandHandler:
             acc_gw: AccountGateway,
             queue: eventbus.Queue,
     ):
-        self._queue = queue
         self._order_repo = order_repo
         self._trs_repo = trs_repo
         self._deal_gw = deal_gw
         self._acc_gw = acc_gw
+        self._queue = queue
 
-    async def get_market(self, ticker: Ticker) -> domain.Market:
-        orders = await self._order_repo.get_many(filter_by={'ticker': ticker, 'status': 'PENDING'})
-        transactions = await self._trs_repo.get_many({'ticker': ticker}, OrderBy('date', asc=True), 0, 100)
-        market = domain.Market(ticker=ticker, orders=orders, transactions=transactions)
-        return market
+    def get_market_by_ticker(self, ticker: Ticker) -> GetMarketByTickerCommand:
+        return GetMarketByTickerCommand(ticker, self._order_repo, self._trs_repo)
 
-    async def send_order(self, order: domain.Order):
-        orders = await self._order_repo.get_many(filter_by={'ticker': order.ticker, 'status': 'PENDING'})
-        market = domain.Market(ticker=order.ticker, orders=orders)
-        if not await self._acc_gw.check_account_has_permission_to_send_order(order):
-            raise PermissionError
-        market.send_order(order)
-        self._queue.extend(market.events.parse_events())
+    def send_order(self, order: domain.Order) -> SendOrderCommand:
+        return SendOrderCommand(order, self._order_repo, self._trs_repo, self._deal_gw, self._acc_gw, self._queue)
 
 
 class OrderHandler:
@@ -68,7 +107,7 @@ class OrderHandler:
 
 
 class TransactionHandler:
-    def __init__(self, trs_repo: service.Repository[domain.Transaction], deal_gw: DealGateway, acc_gw: AccountGateway):
+    def __init__(self, trs_repo: Repository[domain.Transaction], deal_gw: DealGateway, acc_gw: AccountGateway):
         self._repo = trs_repo
         self._deal_gw = deal_gw
         self._acc_gw = acc_gw

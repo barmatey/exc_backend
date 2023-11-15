@@ -35,40 +35,31 @@ class ConnectionManager:
 manager = ConnectionManager()
 
 
-async def get_market(ticker: Ticker) -> MarketSchema:
+async def get_market(ticker: Ticker) -> domain.Market:
     async with db.get_as() as session:
         boot = Bootstrap(session)
-        market_service = boot.get_market_service()
-        market = await market_service.get_market_by_ticker(ticker)
-        return MarketSchema.from_market(market)
+        market = await boot.get_command_factory().get_market_by_ticker(ticker).execute()
+        return market
 
 
 async def send_order(order: domain.Order) -> domain.Market:
     async with db.get_as() as session:
         boot = Bootstrap(session)
-        market_service = boot.get_market_service()
-        market = await market_service.get_market_by_ticker(order.ticker)
-        market.send_order(order)
-
-        queue = boot.get_queue()
-        queue.extend(market.events.parse_events())
-
-        bus = boot.get_eventbus()
-        await bus.run()
-
+        market = await boot.get_command_factory().send_order(order).execute()
+        await boot.get_eventbus().run()
         await session.commit()
         return market
 
 
 @router_market.websocket("/ws/{ticker}")
 async def websocket_endpoint(websocket: WebSocket, ticker: str):
-    market = await get_market(ticker)
+    market = MarketSchema.from_entity(await get_market(ticker))
     await manager.connect(websocket)
     await manager.send_personal_message(market.model_dump(), websocket)
     try:
         while True:
             data = await websocket.receive_json()
             market = await send_order(order=domain.Order(**data))
-            await manager.broadcast(MarketSchema.from_market(market).model_dump())
+            await manager.broadcast(MarketSchema.from_entity(market).model_dump())
     except WebSocketDisconnect:
         manager.disconnect(websocket)
