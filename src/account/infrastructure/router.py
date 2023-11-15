@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Depends
 from src import db
 
-from .. import commands
 from . import bootstrap, schema
 
 
@@ -15,15 +14,14 @@ router_account = APIRouter(
 async def create_account(data: schema.AccountSchema, get_as=Depends(db.get_as)) -> schema.AccountSchema:
     async with get_as as session:
         boot = bootstrap.Bootstrap(session)
-        repo = boot.get_account_repo()
-        acc = data.to_entity()
-        await commands.CreateAccount(account=acc, repo=repo).execute()
+        await boot.get_command_factory().create_account(data.to_entity()).execute()
         await session.commit()
-        return schema.AccountSchema.from_entity(acc)
+        return data
 
 
 @router_account.put("/{account_uuid}")
 async def update_account(data: schema.AccountSchema, get_as=Depends(db.get_as)) -> schema.AccountSchema:
     async with get_as as session:
         boot = bootstrap.Bootstrap(session)
-        repo = boot.get_account_repo()
+        await boot.get_command_factory().update_account(data.to_entity()).execute()
+        return data

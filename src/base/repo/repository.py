@@ -4,7 +4,7 @@ from uuid import UUID
 
 from pydantic import BaseModel
 
-T = TypeVar("T", bound=BaseModel)
+T = TypeVar("T")
 
 
 class OrderBy(NamedTuple):

@@ -29,3 +29,17 @@ class UpdateAccount:
 
     async def execute(self):
         await self._repo.update_one(self._account)
+
+
+class CommandFactory:
+    def __init__(self, acc_repo: Repository[domain.Account], ):
+        self._acc_repo = acc_repo
+
+    def create_account(self, account: domain.Account) -> CreateAccount:
+        return CreateAccount(account, self._acc_repo)
+
+    def get_account_by_uuid(self, uuid: UUID) -> GetAccountByUuid:
+        return GetAccountByUuid(uuid, self._acc_repo)
+
+    def update_account(self, account: domain.Account) -> UpdateAccount:
+        return UpdateAccount(account, self._acc_repo)

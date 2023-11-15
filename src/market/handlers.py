@@ -64,7 +64,7 @@ class SendOrderCommand:
         orders = await self._order_repo.get_many(filter_by={'ticker': order.ticker, 'status': 'PENDING'})
         market = domain.Market(ticker=order.ticker, orders=orders)
         if not await self._acc_gw.check_account_has_permission_to_send_order(order):
-            raise PermissionError
+            raise PermissionError('This account has no permission to send the order')
         market.send_order(order)
         self._queue.extend(market.events.parse_events())
         return market
