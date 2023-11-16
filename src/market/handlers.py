@@ -19,7 +19,7 @@ class AccountGateway(ABC):
         raise NotImplemented
 
     @abstractmethod
-    async def check_account_has_permission_to_send_order(self, order: domain.Order) -> bool:
+    async def check_account_has_permission_to_send_order(self, order: domain.Order):
         raise NotImplemented
 
 
@@ -63,8 +63,7 @@ class SendOrderCommand:
         order = self._order
         orders = await self._order_repo.get_many(filter_by={'ticker': order.ticker, 'status': 'PENDING'})
         market = domain.Market(ticker=order.ticker, orders=orders)
-        if not await self._acc_gw.check_account_has_permission_to_send_order(order):
-            raise PermissionError('This account has no permission to send the order')
+        await self._acc_gw.check_account_has_permission_to_send_order(order)
         market.send_order(order)
         self._queue.extend(market.events.parse_events())
         return market

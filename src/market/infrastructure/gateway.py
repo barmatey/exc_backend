@@ -6,7 +6,7 @@ from src.deal import (
 from src.account import (
     bootstrap as acc_bootstrap,
     domain as acc_domain,
-    commands as acc_commands,
+    handlers as acc_commands,
 )
 from .. import (
     domain as market_domain,
@@ -54,7 +54,8 @@ class AccountGatewayM(market_handlers.AccountGateway):
         seller.reflect_sale(trs.amount)
         await acc_commands.UpdateAccount(seller, acc_repo).execute()
 
-    async def check_account_has_permission_to_send_order(self, order: market_domain.Order) -> bool:
+    async def check_account_has_permission_to_send_order(self, order: market_domain.Order):
         acc_repo = acc_bootstrap.Bootstrap(self._session).get_account_repo()
         acc: acc_domain.Account = await acc_commands.GetAccountByUuid(order.account, acc_repo).execute()
-        return order.amount <= acc.cash
+        if order.amount > acc.cash:
+            raise PermissionError(f'order.amount > acc.cash ({order.amount} > {acc.cash})')

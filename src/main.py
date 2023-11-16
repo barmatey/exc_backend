@@ -4,6 +4,7 @@ from starlette.middleware.cors import CORSMiddleware
 
 from src.market.infrastructure.router import router_market
 from src.account.infrastructure.router import router_account
+from src.commodity.infrastructure.router import router_commodity
 
 app = FastAPI()
 
@@ -21,6 +22,7 @@ app.add_middleware(
 
 app.include_router(router_market)
 app.include_router(router_account)
+app.include_router(router_commodity)
 
 
 if __name__ == "__main__":
