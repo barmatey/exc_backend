@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Literal
 from uuid import UUID
 from sortedcontainers import SortedDict
-from pydantic import ConfigDict, PrivateAttr, BaseModel
+from pydantic import ConfigDict, PrivateAttr, BaseModel, Field
 
 from src.base import eventbus
 from src.base.model import Entity
@@ -21,7 +21,7 @@ class Order(Entity):
     direction: OrderDirection
     price: float
     quantity: int
-    created: datetime
+    created: datetime = Field(default_factory=datetime.now)
     status: OrderStatus = 'PENDING'
 
     @property

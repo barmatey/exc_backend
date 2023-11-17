@@ -9,7 +9,8 @@ from src.commodity.infrastructure.router import router_commodity
 app = FastAPI()
 
 origins = [
-    "http://127.0.0.1:5173",
+    "http://localhost:5173/",
+    "http://localhost:5173",
 ]
 
 app.add_middleware(
@@ -23,7 +24,6 @@ app.add_middleware(
 app.include_router(router_market)
 app.include_router(router_account)
 app.include_router(router_commodity)
-
 
 if __name__ == "__main__":
     uvicorn.run(app, host="127.0.0.1", port=9999)

@@ -1,21 +1,21 @@
 from datetime import datetime
-from uuid import UUID
+from uuid import UUID, uuid4
 
-from pydantic import BaseModel, field_serializer
+from pydantic import BaseModel, field_serializer, Field
 
 from src.core import Ticker
 from .. import domain
 
 
 class OrderSchema(BaseModel):
-    uuid: UUID
     account: UUID
     ticker: Ticker
     dtype: domain.OrderType
     direction: domain.OrderDirection
     price: float
     quantity: int
-    created: datetime
+    created: datetime = Field(default_factory=datetime.now)
+    uuid: UUID = Field(default_factory=uuid4)
 
     def to_entity(self) -> domain.Order:
         return domain.Order(
