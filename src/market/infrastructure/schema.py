@@ -17,6 +17,18 @@ class OrderSchema(BaseModel):
     created: datetime = Field(default_factory=datetime.now)
     uuid: UUID = Field(default_factory=uuid4)
 
+    @classmethod
+    def from_entity(cls, entity: domain.Order) -> 'OrderSchema':
+        return cls(
+            account=entity.account,
+            ticker=entity.ticker,
+            dtype=entity.dtype,
+            direction=entity.direction,
+            price=entity.price,
+            quantity=entity.quantity,
+            uuid=entity.uuid,
+        )
+
     def to_entity(self) -> domain.Order:
         return domain.Order(
             uuid=self.uuid,

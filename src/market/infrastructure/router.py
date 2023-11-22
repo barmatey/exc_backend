@@ -75,12 +75,12 @@ router_order = APIRouter(
 
 
 @router_order.get("/{account_uuid}")
-async def get_account_orders(account_uuid: UUID, get_as=Depends(db.get_as)):
+async def get_account_orders(account_uuid: UUID, get_as=Depends(db.get_as)) -> list[OrderSchema]:
     async with get_as as session:
         boot = Bootstrap(session)
         cmd = boot.get_command_factory().get_many_orders({"account.uuid": str(account_uuid)})
-        result = await cmd.execute()
-        return result
+        orders = await cmd.execute()
+        return [OrderSchema.from_entity(x) for x in orders]
 
 
 @router_order.patch("/cancel")
@@ -91,3 +91,19 @@ async def cancel_order(order: OrderSchema):
         await boot.get_eventbus().run()
         await session.commit()
         await manager.broadcast(MarketSchema.from_entity(market).model_dump())
+
+
+router_transaction = APIRouter(
+    prefix='/transaction',
+    tags=['Transaction'],
+)
+
+
+@router_transaction.get("/")
+async def get_account_transactions(account_uuid: UUID, get_as=Depends(db.get_as)) -> list[TransactionSchema]:
+    async with get_as as session:
+        boot = Bootstrap(session)
+        one = await boot.get_command_factory().get_many_transactions({'buyer.uuid': str(account_uuid)}).execute()
+        two = await boot.get_command_factory().get_many_transactions({'seller.uuid': str(account_uuid)}).execute()
+        transactions = one + two
+        return [TransactionSchema.from_entity(x) for x in transactions]

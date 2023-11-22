@@ -99,6 +99,16 @@ class CancelOrderCommand:
         return market
 
 
+class GetManyTransactionsCommand:
+    def __init__(self, trs_repo: Repository[domain.Transaction], filter_by=None, order_by=None):
+        self._filter_by = filter_by
+        self._order_by = order_by
+        self._trs_repo = trs_repo
+
+    async def execute(self):
+        return await self._trs_repo.get_many(self._filter_by, self._order_by)
+
+
 class CommandFactory:
     def __init__(
             self,
@@ -116,6 +126,9 @@ class CommandFactory:
 
     def get_many_orders(self, filter_by: dict = None, order_by: OrderBy = None) -> GetManyOrdersCommand:
         return GetManyOrdersCommand(self._order_repo, filter_by, order_by)
+
+    def get_many_transactions(self, filter_by: dict = None, order_by: OrderBy = None) -> GetManyTransactionsCommand:
+        return GetManyTransactionsCommand(self._trs_repo, filter_by, order_by)
 
     def get_market_by_ticker(self, ticker: Ticker) -> GetMarketByTickerCommand:
         return GetMarketByTickerCommand(ticker, self._order_repo, self._trs_repo)

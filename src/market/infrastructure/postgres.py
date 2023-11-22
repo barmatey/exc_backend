@@ -20,10 +20,9 @@ class OrderModel(Base):
 
     @staticmethod
     def key_converter(key: str):
-        if key == 'account.uuid':
+        key = key.replace('uuid', 'id')
+        if key == 'account.id':
             key = 'account'
-        if key == 'uuid':
-            key = 'id'
         return key
 
     def to_entity(self) -> domain.Order:
@@ -66,7 +65,11 @@ class TransactionModel(Base):
     @staticmethod
     def key_converter(key: str):
         key = key.replace('.', '_')
-        key = 'id' if key == 'uuid' else key
+        key = key.replace('uuid', 'id')
+        if key == 'buyer_id':
+            key = 'buyer'
+        elif key == 'seller_id':
+            key = 'seller'
         return key
 
     def to_entity(self) -> domain.Transaction:
