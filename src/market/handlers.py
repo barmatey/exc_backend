@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from uuid import UUID
 
 from src.base.repo import Repository
 from src.base import eventbus
@@ -79,6 +80,25 @@ class SendOrderCommand:
         return market
 
 
+class CancelOrderCommand:
+    def __init__(
+            self,
+            order: domain.Order,
+            order_repo: Repository[domain.Order],
+            queue: eventbus.Queue,
+    ):
+        self._order = order
+        self._order_repo = order_repo
+        self._queue = queue
+
+    async def execute(self) -> domain.Market:
+        order = self._order
+        await self._order_repo.remove_many({'uuid': order.uuid})
+        orders = await self._order_repo.get_many(filter_by={'ticker': order.ticker, 'status': 'PENDING'})
+        market = domain.Market(ticker=order.ticker, orders=orders)
+        return market
+
+
 class CommandFactory:
     def __init__(
             self,
@@ -102,6 +122,9 @@ class CommandFactory:
 
     def send_order(self, order: domain.Order) -> SendOrderCommand:
         return SendOrderCommand(order, self._order_repo, self._trs_repo, self._deal_gw, self._acc_gw, self._queue)
+
+    def cancel_order(self, order: domain.Order) -> CancelOrderCommand:
+        return CancelOrderCommand(order, self._order_repo, self._queue)
 
 
 class OrderHandler:

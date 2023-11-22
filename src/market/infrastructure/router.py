@@ -6,25 +6,21 @@ from src import db
 from .schema import *
 from .bootstrap import Bootstrap
 
-router_order = APIRouter(
-    prefix='/order',
-    tags=['Order'],
-)
 
-
-@router_order.get("/{account_uuid}")
-async def get_account_orders(account_uuid: UUID, get_as=Depends(db.get_as)):
-    async with get_as as session:
+async def get_market(ticker: Ticker) -> domain.Market:
+    async with db.get_as() as session:
         boot = Bootstrap(session)
-        cmd = boot.get_command_factory().get_many_orders({"account.uuid": str(account_uuid)})
-        result = await cmd.execute()
-        return result
+        market = await boot.get_command_factory().get_market_by_ticker(ticker).execute()
+        return market
 
 
-router_market = APIRouter(
-    prefix='/market',
-    tags=['Market'],
-)
+async def send_order(order: domain.Order) -> domain.Market:
+    async with db.get_as() as session:
+        boot = Bootstrap(session)
+        market = await boot.get_command_factory().send_order(order).execute()
+        await boot.get_eventbus().run()
+        await session.commit()
+        return market
 
 
 class ConnectionManager:
@@ -50,21 +46,10 @@ class ConnectionManager:
 
 manager = ConnectionManager()
 
-
-async def get_market(ticker: Ticker) -> domain.Market:
-    async with db.get_as() as session:
-        boot = Bootstrap(session)
-        market = await boot.get_command_factory().get_market_by_ticker(ticker).execute()
-        return market
-
-
-async def send_order(order: domain.Order) -> domain.Market:
-    async with db.get_as() as session:
-        boot = Bootstrap(session)
-        market = await boot.get_command_factory().send_order(order).execute()
-        await boot.get_eventbus().run()
-        await session.commit()
-        return market
+router_market = APIRouter(
+    prefix='/market',
+    tags=['Market'],
+)
 
 
 @router_market.websocket("/ws/{ticker}")
@@ -81,3 +66,28 @@ async def websocket_endpoint(websocket: WebSocket, ticker: str):
         manager.disconnect(websocket)
     # except Exception as err:
     #     logger.error(f'{err}')
+
+
+router_order = APIRouter(
+    prefix='/order',
+    tags=['Order'],
+)
+
+
+@router_order.get("/{account_uuid}")
+async def get_account_orders(account_uuid: UUID, get_as=Depends(db.get_as)):
+    async with get_as as session:
+        boot = Bootstrap(session)
+        cmd = boot.get_command_factory().get_many_orders({"account.uuid": str(account_uuid)})
+        result = await cmd.execute()
+        return result
+
+
+@router_order.patch("/cancel")
+async def cancel_order(order: OrderSchema):
+    async with db.get_as() as session:
+        boot = Bootstrap(session)
+        market = await boot.get_command_factory().cancel_order(order.to_entity()).execute()
+        await boot.get_eventbus().run()
+        await session.commit()
+        await manager.broadcast(MarketSchema.from_entity(market).model_dump())
