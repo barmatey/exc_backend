@@ -42,6 +42,16 @@ class GetMarketByTickerCommand:
         return market
 
 
+class GetManyOrdersCommand:
+    def __init__(self, order_repo: Repository[domain.Order], filter_by=None, order_by=None):
+        self._order_repo = order_repo
+        self._filter_by = filter_by
+        self._order_by = order_by
+
+    async def execute(self) -> list[domain.Order]:
+        return await self._order_repo.get_many(filter_by=self._filter_by, order_by=self._order_by)
+
+
 class SendOrderCommand:
     def __init__(
             self,
@@ -83,6 +93,9 @@ class CommandFactory:
         self._deal_gw = deal_gw
         self._acc_gw = acc_gw
         self._queue = queue
+
+    def get_many_orders(self, filter_by: dict = None, order_by: OrderBy = None) -> GetManyOrdersCommand:
+        return GetManyOrdersCommand(self._order_repo, filter_by, order_by)
 
     def get_market_by_ticker(self, ticker: Ticker) -> GetMarketByTickerCommand:
         return GetMarketByTickerCommand(ticker, self._order_repo, self._trs_repo)

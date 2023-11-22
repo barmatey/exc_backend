@@ -17,6 +17,7 @@ class DealModel(Base):
 
     @staticmethod
     def key_converter(key: str):
+        key = key.replace('.', '_')
         key = 'id' if key == 'uuid' else key
         return key
 

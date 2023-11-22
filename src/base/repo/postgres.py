@@ -1,6 +1,7 @@
 from typing import Type
 from uuid import UUID
 
+import loguru
 from sqlalchemy import TIMESTAMP, func, select, update, delete, Result
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
