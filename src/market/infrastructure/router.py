@@ -1,3 +1,5 @@
+from typing import Union
+
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends
 from loguru import logger
 
@@ -5,6 +7,7 @@ from src import db
 
 from .schema import *
 from .bootstrap import Bootstrap
+from ...base.repo.repository import OrderBy
 
 
 async def get_market(ticker: Ticker) -> domain.Market:
@@ -74,6 +77,18 @@ router_order = APIRouter(
 )
 
 
+@router_order.post("/")
+async def create_order(order: OrderSchema, get_as=Depends(db.get_as)) -> OrderSchema:
+    async with get_as as session:
+        boot = Bootstrap(session)
+        cmd = boot.get_command_factory().send_order(order.to_entity())
+        market = await cmd.execute()
+        await boot.get_eventbus().run()
+        await session.commit()
+        await manager.broadcast(MarketSchema.from_entity(market))
+        return order
+
+
 @router_order.get("/{account_uuid}")
 async def get_account_orders(account_uuid: UUID, get_as=Depends(db.get_as)) -> list[OrderSchema]:
     async with get_as as session:
@@ -99,11 +114,30 @@ router_transaction = APIRouter(
 )
 
 
-@router_transaction.get("/")
+@router_transaction.get("/{account_uuid}")
 async def get_account_transactions(account_uuid: UUID, get_as=Depends(db.get_as)) -> list[TransactionSchema]:
     async with get_as as session:
         boot = Bootstrap(session)
         one = await boot.get_command_factory().get_many_transactions({'buyer.uuid': str(account_uuid)}).execute()
         two = await boot.get_command_factory().get_many_transactions({'seller.uuid': str(account_uuid)}).execute()
         transactions = one + two
+        return [TransactionSchema.from_entity(x) for x in transactions]
+
+
+@router_transaction.get("/")
+async def get_many_transactions(
+        ticker: Ticker = None,
+        slice_from: int = None,
+        slice_to: int = None,
+        order_by: Union[str, list[str]] = None,
+        asc: bool = True,
+        get_as=Depends(db.get_as),
+):
+    filter_by = {'ticker': ticker} if ticker else None
+    order_by = OrderBy(order_by, asc) if order_by else None
+
+    async with get_as as session:
+        boot = Bootstrap(session)
+        cmd = boot.get_command_factory().get_many_transactions(filter_by, order_by, slice_from, slice_to)
+        transactions = await cmd.execute()
         return [TransactionSchema.from_entity(x) for x in transactions]
