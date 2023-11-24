@@ -48,10 +48,10 @@ class ConnectionManager:
 def manager():
     data = {}
 
-    def get(ticker: Ticker) -> ConnectionManager:
-        if data.get(ticker) is None:
-            data[ticker] = ConnectionManager()
-        return data[ticker]
+    def get(key: str) -> ConnectionManager:
+        if data.get(key) is None:
+            data[key] = ConnectionManager()
+        return data[key]
 
     return get
 
@@ -75,14 +75,24 @@ async def websocket_endpoint(websocket: WebSocket, ticker: str):
             _data = await websocket.receive_text()
     except WebSocketDisconnect:
         market_manager(ticker).disconnect(websocket)
-    # except Exception as err:
-    #     logger.error(f'{err}')
 
 
 router_order = APIRouter(
     prefix='/order',
     tags=['Order'],
 )
+
+order_manager = manager()
+
+
+@router_order.websocket("/ws/{account_uuid}")
+async def order_websocket_endpoint(websocket: WebSocket, account_uuid: str):
+    await market_manager(account_uuid).connect(websocket)
+    try:
+        while True:
+            _data = await websocket.receive_text()
+    except WebSocketDisconnect:
+        market_manager(account_uuid).disconnect(websocket)
 
 
 @router_order.post("/")
