@@ -88,7 +88,6 @@ class MarketSchema(BaseModel):
     ticker: Ticker
     buy_level: list[tuple[float, int]]
     sell_level: list[tuple[float, int]]
-    transactions: list[TransactionSchema]
 
     @classmethod
     def from_entity(cls, market: domain.Market):
@@ -98,5 +97,4 @@ class MarketSchema(BaseModel):
             ticker=market.ticker,
             buy_level=buy_level,
             sell_level=sell_level,
-            transactions=[TransactionSchema.from_entity(x) for x in market.transactions],
         )

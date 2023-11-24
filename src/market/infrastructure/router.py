@@ -17,13 +17,13 @@ async def get_market(ticker: Ticker) -> domain.Market:
         return market
 
 
-async def send_order(order: domain.Order) -> domain.Market:
+async def send_order(order: domain.Order) -> MarketSchema:
     async with db.get_as() as session:
         boot = Bootstrap(session)
         market = await boot.get_command_factory().send_order(order).execute()
         await boot.get_eventbus().run()
         await session.commit()
-        return market
+        return MarketSchema.from_entity(market)
 
 
 class ConnectionManager:
@@ -85,7 +85,7 @@ async def create_order(order: OrderSchema, get_as=Depends(db.get_as)) -> OrderSc
         market = await cmd.execute()
         await boot.get_eventbus().run()
         await session.commit()
-        await manager.broadcast(MarketSchema.from_entity(market))
+        await manager.broadcast(MarketSchema.from_entity(market).model_dump())
         return order
 
 
@@ -129,7 +129,7 @@ async def get_many_transactions(
         ticker: Ticker = None,
         slice_from: int = None,
         slice_to: int = None,
-        order_by: Union[str, list[str]] = None,
+        order_by: str = None,
         asc: bool = True,
         get_as=Depends(db.get_as),
 ):
