@@ -115,12 +115,12 @@ async def get_account_orders(account_uuid: UUID, get_as=Depends(db.get_as)) -> l
 @router_order.patch("/cancel")
 async def cancel_order(order: OrderSchema):
     async with db.get_as() as session:
+        order.status = 'CANCELED'
         boot = Bootstrap(session)
         market = await boot.get_command_factory().cancel_order(order.to_entity()).execute()
         await boot.get_eventbus().run()
         await session.commit()
         await market_manager.broadcast(order.ticker, MarketSchema.from_entity(market).model_dump())
-        order.status = 'CANCELED'
         await order_manager.broadcast(str(order.account), order.model_dump())
 
 
