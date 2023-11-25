@@ -45,8 +45,16 @@ class OrderSchema(BaseModel):
         )
 
     @field_serializer('uuid')
-    def serialize_dt(self, uuid: UUID):
+    def serialize_uuid(self, uuid: UUID):
         return str(uuid)
+
+    @field_serializer('account')
+    def serialize_account(self, acc: UUID):
+        return str(acc)
+
+    @field_serializer('created')
+    def serialize_dt(self, date: datetime) -> str:
+        return str(date)
 
 
 class TransactionSchema(BaseModel):

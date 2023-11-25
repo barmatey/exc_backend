@@ -48,13 +48,13 @@ class Market(BaseModel):
     _buyers: SortedDict[float, deque[Order]] = PrivateAttr(default_factory=SortedDict)
     _sellers: SortedDict[float, deque[Order]] = PrivateAttr(default_factory=SortedDict)
     _transactions: list[Transaction] = PrivateAttr(default_factory=list)
+    _orders: list[Order] = PrivateAttr(default_factory=list)
     _events: eventbus.EventStore = PrivateAttr(default_factory=eventbus.EventStore)
 
     def __init__(self, orders: list[Order], transactions: list[Transaction] = None, **data):
         super().__init__(**data)
         for order in orders:
-            self.__push_order_in_deque(order)
-            self.events.parse_events()
+            self.__push_order_in_deque(order, constructor=True)
         if len(self._buyers) and len(self._sellers):
             if self._buyers.peekitem(-1)[0] >= self._sellers.peekitem(0)[0]:
                 raise Exception(f'buyers max price({self._buyers.peekitem(-1)[0]}) '
@@ -65,6 +65,10 @@ class Market(BaseModel):
     @property
     def events(self):
         return self._events
+
+    @property
+    def orders(self) -> list[Order]:
+        return self._orders
 
     @property
     def transactions(self):
@@ -147,12 +151,14 @@ class Market(BaseModel):
                         break
                 self.__update_best_buyers()
 
-    def __push_order_in_deque(self, order: Order):
+    def __push_order_in_deque(self, order: Order, constructor=False):
         queue = self._buyers if order.direction == 'BUY' else self._sellers
         if queue.get(order.price) is None:
             queue[order.price] = deque()
         queue[order.price].append(order)
-        self.events.push_event(event=eventbus.Created(key='OrderCreated', entity=order))
+        if not constructor:
+            self._orders.append(order)
+            self.events.push_event(event=eventbus.Created(key='OrderCreated', entity=order))
 
     def __update_best_sellers(self):
         best_sellers = deque(x for x in self._sellers.peekitem(0)[1] if x.quantity > 0)
@@ -184,6 +190,7 @@ class Market(BaseModel):
             cparty.status = 'COMPLETED'
             self.events.push_event(eventbus.Deleted(key='OrderCompleted', entity=cparty))
 
+        self._orders.append(cparty)
         buy, sell = (order.account, cparty.account) if order.direction == 'BUY' else (cparty.account, order.account)
 
         transaction = Transaction(

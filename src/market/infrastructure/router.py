@@ -15,15 +15,6 @@ async def get_market(ticker: Ticker) -> domain.Market:
         return market
 
 
-async def send_order(order: domain.Order) -> MarketSchema:
-    async with db.get_as() as session:
-        boot = Bootstrap(session)
-        market = await boot.get_command_factory().send_order(order).execute()
-        await boot.get_eventbus().run()
-        await session.commit()
-        return MarketSchema.from_entity(market)
-
-
 class ConnectionManager:
     def __init__(self):
         self.active_connections: list[WebSocket] = []
@@ -58,6 +49,7 @@ def manager():
 
 market_manager = manager()
 trs_manager = manager()
+order_manager = manager()
 
 router_market = APIRouter(
     prefix='/market',
@@ -82,12 +74,10 @@ router_order = APIRouter(
     tags=['Order'],
 )
 
-order_manager = manager()
-
 
 @router_order.websocket("/ws/{account_uuid}")
 async def order_websocket_endpoint(websocket: WebSocket, account_uuid: str):
-    await market_manager(account_uuid).connect(websocket)
+    await order_manager(account_uuid).connect(websocket)
     try:
         while True:
             _data = await websocket.receive_text()
@@ -106,6 +96,8 @@ async def create_order(order: OrderSchema, get_as=Depends(db.get_as)) -> OrderSc
         await market_manager(order.ticker).broadcast(MarketSchema.from_entity(market).model_dump())
         for trs in market.transactions:
             await trs_manager(order.ticker).broadcast(TransactionSchema.from_entity(trs).model_dump())
+        for order in market.orders:
+            await order_manager(str(order.account)).broadcast(OrderSchema.from_entity(order).model_dump())
         return order
 
 
