@@ -14,6 +14,7 @@ class OrderSchema(BaseModel):
     direction: domain.OrderDirection
     price: float
     quantity: int
+    status: domain.OrderStatus = 'PENDING'
     created: datetime = Field(default_factory=datetime.now)
     uuid: UUID = Field(default_factory=uuid4)
 
@@ -27,6 +28,7 @@ class OrderSchema(BaseModel):
             price=entity.price,
             quantity=entity.quantity,
             uuid=entity.uuid,
+            status=entity.status,
         )
 
     def to_entity(self) -> domain.Order:
@@ -39,6 +41,7 @@ class OrderSchema(BaseModel):
             price=self.price,
             quantity=self.quantity,
             created=self.created,
+            status=self.status,
         )
 
     @field_serializer('uuid')

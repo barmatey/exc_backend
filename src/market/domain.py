@@ -11,7 +11,7 @@ from src.core import Ticker
 
 OrderType = Literal['MARKET', 'LIMIT']
 OrderDirection = Literal['BUY', 'SELL']
-OrderStatus = Literal['PENDING', 'COMPLETED', 'CANCELED']
+OrderStatus = Literal['PENDING', 'PARTIAL', 'COMPLETED', 'CANCELED']
 
 
 class Order(Entity):
@@ -173,11 +173,15 @@ class Market(BaseModel):
             quantity = order.quantity
             order.quantity = 0
             cparty.quantity -= quantity
+            cparty.status = 'PARTIAL'
+            order.status = 'COMPLETED'
             self.events.push_event(eventbus.Updated(key='OrderUpdated', entity=cparty))
         else:
             quantity = cparty.quantity
             cparty.quantity = 0
             order.quantity -= quantity
+            order.status = 'PARTIAL'
+            cparty.status = 'COMPLETED'
             self.events.push_event(eventbus.Deleted(key='OrderCompleted', entity=cparty))
 
         buy, sell = (order.account, cparty.account) if order.direction == 'BUY' else (cparty.account, order.account)
