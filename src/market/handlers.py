@@ -94,7 +94,7 @@ class CancelOrderCommand:
     async def execute(self) -> domain.Market:
         order = self._order
         await self._order_repo.remove_many({'uuid': order.uuid})
-        orders = await self._order_repo.get_many(filter_by={'ticker': order.ticker, 'status': 'PENDING'})
+        orders = await self._order_repo.get_many(filter_by={'ticker': order.ticker})
         market = domain.Market(ticker=order.ticker, orders=orders)
         return market
 
