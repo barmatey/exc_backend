@@ -82,6 +82,7 @@ async def order_websocket_endpoint(websocket: WebSocket, account_uuid: str):
         while True:
             _data = await websocket.receive_text()
     except WebSocketDisconnect:
+        logger.warning(f"disconnect, {str(websocket)}")
         market_manager(account_uuid).disconnect(websocket)
 
 
