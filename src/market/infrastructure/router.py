@@ -120,6 +120,8 @@ async def cancel_order(order: OrderSchema):
         await boot.get_eventbus().run()
         await session.commit()
         await market_manager.broadcast(order.ticker, MarketSchema.from_entity(market).model_dump())
+        order.status = 'CANCELED'
+        await order_manager.broadcast(str(order.account), order.model_dump())
 
 
 router_transaction = APIRouter(
