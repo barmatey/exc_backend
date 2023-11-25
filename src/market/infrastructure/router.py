@@ -17,18 +17,20 @@ async def get_market(ticker: Ticker) -> domain.Market:
 
 class ConnectionManager:
     def __init__(self):
-        self.active_connections: list[WebSocket] = []
+        self.active_connections: dict[str, list[WebSocket]] = {}
 
-    async def connect(self, websocket: WebSocket):
+    async def connect(self, key, websocket: WebSocket):
         await websocket.accept()
-        self.active_connections.append(websocket)
+        if self.active_connections.get(key) is None:
+            self.active_connections[key] = []
+        self.active_connections[key].append(websocket)
         logger.debug(f'current connections: {len(self.active_connections)}')
 
-    def disconnect(self, websocket: WebSocket):
-        self.active_connections.remove(websocket)
+    def disconnect(self, key, websocket: WebSocket):
+        self.active_connections[key].remove(websocket)
 
-    async def broadcast(self, message: dict):
-        for connection in self.active_connections:
+    async def broadcast(self, key, message: dict):
+        for connection in self.active_connections[key]:
             await connection.send_json(message)
 
     @staticmethod
@@ -47,9 +49,9 @@ def manager():
     return get
 
 
-market_manager = manager()
-trs_manager = manager()
-order_manager = manager()
+market_manager = ConnectionManager()
+trs_manager = ConnectionManager()
+order_manager = ConnectionManager()
 
 router_market = APIRouter(
     prefix='/market',
@@ -60,13 +62,13 @@ router_market = APIRouter(
 @router_market.websocket("/ws/{ticker}")
 async def websocket_endpoint(websocket: WebSocket, ticker: str):
     market = MarketSchema.from_entity(await get_market(ticker))
-    await market_manager(ticker).connect(websocket)
-    await market_manager(ticker).send_personal_message(market.model_dump(), websocket)
+    await market_manager.connect(ticker, websocket)
+    await market_manager.send_personal_message(market.model_dump(), websocket)
     try:
         while True:
             _data = await websocket.receive_text()
     except WebSocketDisconnect:
-        market_manager(ticker).disconnect(websocket)
+        market_manager.disconnect(ticker, websocket)
 
 
 router_order = APIRouter(
@@ -77,12 +79,12 @@ router_order = APIRouter(
 
 @router_order.websocket("/ws/{account_uuid}")
 async def order_websocket_endpoint(websocket: WebSocket, account_uuid: str):
-    await order_manager(account_uuid).connect(websocket)
+    await order_manager.connect(account_uuid, websocket)
     try:
         while True:
             _data = await websocket.receive_text()
     except WebSocketDisconnect:
-        market_manager(account_uuid).disconnect(websocket)
+        order_manager.disconnect(account_uuid, websocket)
 
 
 @router_order.post("/")
@@ -93,11 +95,11 @@ async def create_order(order: OrderSchema, get_as=Depends(db.get_as)) -> OrderSc
         market = await cmd.execute()
         await boot.get_eventbus().run()
         await session.commit()
-        await market_manager(order.ticker).broadcast(MarketSchema.from_entity(market).model_dump())
+        await market_manager.broadcast(order.ticker, MarketSchema.from_entity(market).model_dump())
         for trs in market.transactions:
-            await trs_manager(order.ticker).broadcast(TransactionSchema.from_entity(trs).model_dump())
+            await trs_manager.broadcast(order.ticker, TransactionSchema.from_entity(trs).model_dump())
         for order in market.orders:
-            await order_manager(str(order.account)).broadcast(OrderSchema.from_entity(order).model_dump())
+            await order_manager.broadcast(str(order.account), OrderSchema.from_entity(order).model_dump())
         return order
 
 
@@ -117,7 +119,7 @@ async def cancel_order(order: OrderSchema):
         market = await boot.get_command_factory().cancel_order(order.to_entity()).execute()
         await boot.get_eventbus().run()
         await session.commit()
-        await market_manager(order.ticker).broadcast(MarketSchema.from_entity(market).model_dump())
+        await market_manager.broadcast(order.ticker, MarketSchema.from_entity(market).model_dump())
 
 
 router_transaction = APIRouter(
@@ -128,13 +130,12 @@ router_transaction = APIRouter(
 
 @router_transaction.websocket("/ws/{ticker}")
 async def trs_websocket_endpoint(websocket: WebSocket, ticker: str):
-    mng = trs_manager(ticker)
-    await mng.connect(websocket)
+    await trs_manager.connect(ticker, websocket)
     try:
         while True:
             _ = await websocket.receive_text()
     except WebSocketDisconnect:
-        mng.disconnect(websocket)
+        trs_manager.disconnect(ticker, websocket)
 
 
 @router_transaction.get("/{account_uuid}")
