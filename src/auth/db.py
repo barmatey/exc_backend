@@ -15,7 +15,7 @@ class Base(DeclarativeBase):
 
 
 class User(SQLAlchemyBaseUserTableUUID, Base):
-    account = mapped_column(String(64), nullable=False)
+    pass
 
 
 engine = create_async_engine(DATABASE_URL)
