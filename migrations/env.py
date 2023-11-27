@@ -11,6 +11,7 @@ from src.market.infrastructure import postgres as market_postgres
 from src.deal.infrastructure import postgres as deal_postgres
 from src.account.infrastructure import postgres as account_postgres
 from src.commodity.infrastructure import postgres as commodity_postgres
+from src.auth import db as auth_postgres
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -25,7 +26,10 @@ if config.config_file_name is not None:
 # for 'autogenerate' support
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
-target_metadata = Base.metadata
+target_metadata = [
+    Base.metadata,
+    auth_postgres.Base.metadata,
+]
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:

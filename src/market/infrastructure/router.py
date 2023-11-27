@@ -24,7 +24,7 @@ class ConnectionManager:
         if self.active_connections.get(key) is None:
             self.active_connections[key] = []
         self.active_connections[key].append(websocket)
-        logger.debug(f'current connections: {len(self.active_connections)}')
+        logger.debug(f'current connections: {len(self.active_connections[key])}')
 
     def disconnect(self, key, websocket: WebSocket):
         self.active_connections[key].remove(websocket)
@@ -36,17 +36,6 @@ class ConnectionManager:
     @staticmethod
     async def send_personal_message(message: dict, websocket: WebSocket):
         await websocket.send_json(message)
-
-
-def manager():
-    data: dict[str, ConnectionManager] = {}
-
-    def get(key: str) -> ConnectionManager:
-        if data.get(key) is None:
-            data[key] = ConnectionManager()
-        return data[key]
-
-    return get
 
 
 market_manager = ConnectionManager()

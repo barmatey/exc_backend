@@ -72,7 +72,7 @@ class SendOrderCommand:
 
     async def execute(self) -> domain.Market:
         order = self._order
-        orders = await self._order_repo.get_many(filter_by={'ticker': order.ticker, 'status': 'PENDING'})
+        orders = await self._order_repo.get_many(filter_by={'ticker': order.ticker})
         market = domain.Market(ticker=order.ticker, orders=orders)
         await self._acc_gw.check_account_has_permission_to_send_order(order)
         market.send_order(order)
