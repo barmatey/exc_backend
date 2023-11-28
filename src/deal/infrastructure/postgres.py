@@ -30,8 +30,7 @@ class DealModel(Base):
             account=self.account,
             ticker=self.ticker,
             status=self.status,
-            transaction=self.transaction,
-            documents=self.documents,
+            transactions=[x.to_entity() for x in self.transactions]
         )
 
     @classmethod
@@ -62,6 +61,13 @@ class InnerTransactionModel(Base):
             direction=entity.direction,
         )
 
+    def to_entity(self, **kwargs) -> domain.InnerTransaction:
+        return domain.InnerTransaction(
+            quantity=self.quantity,
+            price=self.price,
+            direction=self.direction,
+        )
+
 
 class DealRepo(PostgresRepo):
     def __init__(self, session: AsyncSession, model=DealModel):
@@ -77,6 +83,6 @@ class DealRepo(PostgresRepo):
                        slice_from=None, slice_to=None) -> list[domain.Deal]:
         stmt = select(DealModel)
         stmt = self._expand_statement(stmt, filter_by, order_by, slice_from, slice_to)
-        result = list(await self._session.execute(stmt))
-        print(result)
-        return result
+        result = (await self._session.scalars(stmt)).unique()
+        entities = [model.to_entity() for model in result]
+        return entities

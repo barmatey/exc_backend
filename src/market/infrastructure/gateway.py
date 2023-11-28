@@ -28,6 +28,7 @@ class DealGatewayM(market_handlers.DealGateway):
             )
             await factory.create_deal(deal).execute()
         else:
+            raise Exception
             deal = deals.pop()
             deal.append_transaction(
                 deal_domain.InnerTransaction(direction='BUY', price=trs.price, quantity=trs.quantity)

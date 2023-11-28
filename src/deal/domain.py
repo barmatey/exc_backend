@@ -23,6 +23,10 @@ class Deal(Entity):
     status: DealStatus
     _transactions = PrivateAttr(default_factory=list)
 
+    def __init__(self, transactions: list[InnerTransaction], **data):
+        super().__init__(**data)
+        self._transactions = transactions
+
     @property
     def transactions(self) -> list[InnerTransaction]:
         return self._transactions
