@@ -11,15 +11,6 @@ from src.base.repo.repository import OrderBy
 from src.deal import domain
 
 
-class InnerTransactionModel(Base):
-    __tablename__ = 'deal_transaction_table'
-    price: Mapped[Float] = mapped_column(Float, nullable=False)
-    quantity: Mapped[Integer] = mapped_column(Integer, nullable=False)
-    direction: Mapped[String] = mapped_column(String(8), nullable=False)
-    deal_id: Mapped[UUID] = ForeignKey('deal_table.id')
-    deal = relationship('DealModel', back_populates='transactions')
-
-
 class DealModel(Base):
     __tablename__ = 'deal_table'
     account: Mapped[UUID] = mapped_column(UUID, nullable=False)
@@ -50,13 +41,25 @@ class DealModel(Base):
             account=entity.account,
             ticker=entity.ticker,
             status=entity.status,
-            transactions=[InnerTransactionModel(
-                id=uuid4(),
-                price=x.price,
-                quantity=x.quantity,
-                direction=x.direction,
-                deal=entity.uuid,
-            ) for x in entity.transactions]
+            transactions=[InnerTransactionModel.from_entity(x) for x in entity.transactions]
+        )
+
+
+class InnerTransactionModel(Base):
+    __tablename__ = 'deal_transaction_table'
+    price: Mapped[Float] = mapped_column(Float, nullable=False)
+    quantity: Mapped[Integer] = mapped_column(Integer, nullable=False)
+    direction: Mapped[String] = mapped_column(String(8), nullable=False)
+    deal_id: Mapped[UUID] = mapped_column(ForeignKey(DealModel.id))
+    deal = relationship('DealModel', back_populates='transactions')
+
+    @classmethod
+    def from_entity(cls, entity: domain.InnerTransaction):
+        return cls(
+            id=uuid4(),
+            price=entity.price,
+            quantity=entity.quantity,
+            direction=entity.direction,
         )
 
 
