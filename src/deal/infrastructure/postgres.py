@@ -1,11 +1,13 @@
 from uuid import UUID
 
-from sqlalchemy import String, TIMESTAMP, Integer, Float, JSON, ForeignKey
+from sqlalchemy import String, TIMESTAMP, Integer, Float, JSON, ForeignKey, select
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.dialects.postgresql import UUID
 
 
-from src.base.repo.postgres import Base
+from src.base.repo.postgres import Base, PostgresRepo
+from src.base.repo.repository import OrderBy
 from src.deal import domain
 
 
@@ -49,3 +51,23 @@ class DealModel(Base):
             transaction=str(entity.transaction),
             documents=entity.documents,
         )
+
+
+class DealRepo(PostgresRepo):
+    def __init__(self, session: AsyncSession, model=DealModel):
+        super().__init__(session, model)
+
+    async def get_one_by_id(self, uuid: UUID) -> domain.Deal:
+        raise NotImplemented
+
+    async def get_many_by_id(self, ids: list[UUID], order_by: OrderBy = None) -> list[domain.Deal]:
+        raise NotImplemented
+
+    async def get_many(self, filter_by: dict = None, order_by: OrderBy = None,
+                       slice_from=None, slice_to=None) -> list[domain.Deal]:
+        stmt = select(DealModel)
+        stmt = self._expand_statement(stmt, filter_by, order_by, slice_from, slice_to)
+        result = list(await self._session.execute(stmt))
+        print()
+        print(result)
+        raise Exception

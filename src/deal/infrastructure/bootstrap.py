@@ -13,5 +13,5 @@ class Bootstrap:
         return self._queue
 
     def get_deal_command_factory(self) -> commands.DealCommandFactory:
-        repo = PostgresRepo(self._session, postgres.DealModel)
+        repo = postgres.DealRepo(self._session)
         return commands.DealCommandFactory(repo)
