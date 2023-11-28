@@ -1,19 +1,27 @@
 from uuid import UUID
 
-from sqlalchemy import String, TIMESTAMP, Integer, Float, JSON
+from sqlalchemy import String, TIMESTAMP, Integer, Float, JSON, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.dialects.postgresql import UUID
+
 
 from src.base.repo.postgres import Base
 from src.deal import domain
 
 
+class InnerTransactionModel(Base):
+    __tablename__ = 'deal_transaction'
+    price: Mapped[Float] = mapped_column(Float, nullable=False)
+    quantity: Mapped[Integer] = mapped_column(Integer, nullable=False)
+    direction: Mapped[String] = mapped_column(String(8), nullable=False)
+
+
 class DealModel(Base):
     __tablename__ = 'deal'
-    account: Mapped[str] = mapped_column(String(64), nullable=False)
+    account: Mapped[UUID] = mapped_column(UUID, nullable=False)
     ticker: Mapped[str] = mapped_column(String(32), nullable=False)
     status: Mapped[str] = mapped_column(String(16), nullable=False)
-    transaction: Mapped[str] = mapped_column(String(64), nullable=False)
-    documents: Mapped[JSON] = mapped_column(JSON, nullable=True)
+    transaction: Mapped[UUID] = ForeignKey('InnerTransactionModel')
 
     @staticmethod
     def key_converter(key: str):
