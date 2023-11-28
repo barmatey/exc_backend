@@ -12,7 +12,7 @@ from src.deal import domain
 
 
 class InnerTransactionModel(Base):
-    __tablename__ = 'deal_transaction'
+    __tablename__ = 'deal_transaction_table'
     price: Mapped[Float] = mapped_column(Float, nullable=False)
     quantity: Mapped[Integer] = mapped_column(Integer, nullable=False)
     direction: Mapped[String] = mapped_column(String(8), nullable=False)
