@@ -16,7 +16,7 @@ class InnerTransactionModel(Base):
     price: Mapped[Float] = mapped_column(Float, nullable=False)
     quantity: Mapped[Integer] = mapped_column(Integer, nullable=False)
     direction: Mapped[String] = mapped_column(String(8), nullable=False)
-    deal_id: Mapped[UUID] = ForeignKey('DealModel')
+    deal_id: Mapped[UUID] = ForeignKey('deal_table.id')
     deal = relationship('DealModel', back_populates='transactions')
 
 
