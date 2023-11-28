@@ -20,23 +20,9 @@ class DealGatewayM(market_handlers.DealGateway):
 
     async def create_deals_from_transaction(self, trs: market_domain.Transaction):
         deal_repo = deal_bootstrap.Bootstrap(self._session).get_deal_repo()
-        cmd = deal_commands.CreateDeal(deal_domain.Deal(
-            account=trs.buyer,
-            ticker=trs.ticker,
-            transaction=trs.uuid,
-            status='PROCESSING',
-            documents=[],
-        ), deal_repo)
-        await cmd.execute()
-
-        cmd = deal_commands.CreateDeal(deal_domain.Deal(
-            account=trs.seller,
-            ticker=trs.ticker,
-            transaction=trs.uuid,
-            status='PROCESSING',
-            documents=[],
-        ), deal_repo)
-        await cmd.execute()
+        deal = await deal_repo.get_many({'ticker': trs.ticker, 'account.uuid': trs.buyer})
+        deal = deal.pop()
+        raise NotImplemented
 
 
 class AccountGatewayM(market_handlers.AccountGateway):
