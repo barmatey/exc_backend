@@ -23,9 +23,9 @@ class Deal(Entity):
     status: DealStatus
     _transactions = PrivateAttr(default_factory=list)
 
-    def __init__(self, transactions: list[InnerTransaction], **data):
+    def __init__(self, transactions: list[InnerTransaction] = None, **data):
         super().__init__(**data)
-        self._transactions = transactions
+        self._transactions = transactions if transactions is not None else []
 
     @property
     def transactions(self) -> list[InnerTransaction]:

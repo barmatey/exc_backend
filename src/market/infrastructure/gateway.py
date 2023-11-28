@@ -22,18 +22,22 @@ class DealGatewayM(market_handlers.DealGateway):
         factory = deal_bootstrap.Bootstrap(self._session).get_deal_command_factory()
         deals = (await factory.get_many_deals({'ticker': trs.ticker, 'account': trs.buyer}).execute())
         if len(deals) == 0:
-            deal = deal_domain.Deal(account=trs.buyer, ticker=trs.ticker, status='PROCESSING', )
+            deal = deal_domain.Deal(account=trs.buyer, ticker=trs.ticker, status='PROCESSING')
             deal.append_transaction(
                 deal_domain.InnerTransaction(direction='BUY', price=trs.price, quantity=trs.quantity)
             )
             await factory.create_deal(deal).execute()
         else:
-            raise Exception
             deal = deals.pop()
-            deal.append_transaction(
-                deal_domain.InnerTransaction(direction='BUY', price=trs.price, quantity=trs.quantity)
-            )
-            await factory.update_deal(deal).execute()
+        trs = deal_domain.InnerTransaction(direction='BUY', price=trs.price, quantity=trs.quantity)
+        await factory.create_inner_transaction(trs).execute()
+
+        # print(deal.transactions)
+        # deal.append_transaction(
+        #     deal_domain.InnerTransaction(direction='BUY', price=trs.price, quantity=trs.quantity)
+        # )
+        # print(deal.transactions)
+        # await factory.update_deal(deal).execute()
 
 
 class AccountGatewayM(market_handlers.AccountGateway):
