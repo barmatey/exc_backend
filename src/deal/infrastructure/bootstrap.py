@@ -1,6 +1,6 @@
 from src.base import eventbus
 from src.base.repo import Repository, PostgresRepo
-from src.deal import domain
+from src.deal import domain, commands
 from src.deal.infrastructure import postgres
 
 
@@ -12,6 +12,6 @@ class Bootstrap:
     def get_queue(self):
         return self._queue
 
-    def get_deal_repo(self) -> Repository[domain.Deal]:
+    def get_deal_command_factory(self) -> commands.DealCommandFactory:
         repo = PostgresRepo(self._session, postgres.DealModel)
-        return repo
+        return commands.DealCommandFactory(repo)

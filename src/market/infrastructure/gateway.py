@@ -19,10 +19,12 @@ class DealGatewayM(market_handlers.DealGateway):
         self._session = session
 
     async def create_deals_from_transaction(self, trs: market_domain.Transaction):
-        deal_repo = deal_bootstrap.Bootstrap(self._session).get_deal_repo()
-        deal = await deal_repo.get_many({'ticker': trs.ticker, 'account.uuid': trs.buyer})
-        deal = deal.pop()
-        raise NotImplemented
+        factory = deal_bootstrap.Bootstrap(self._session).get_deal_command_factory()
+        deal = (await factory.get_many_deals({'ticker': trs.ticker, 'account.uuid': trs.buyer}).execute()).pop()
+        deal.append_transaction(
+            deal_domain.InnerTransaction(direction='BUY', price=trs.price, quantity=trs.quantity)
+        )
+        await factory.update_deal(deal).execute()
 
 
 class AccountGatewayM(market_handlers.AccountGateway):
