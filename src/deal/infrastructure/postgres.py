@@ -1,8 +1,8 @@
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from sqlalchemy import String, TIMESTAMP, Integer, Float, JSON, ForeignKey, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects.postgresql import UUID
 
 
@@ -16,6 +16,7 @@ class InnerTransactionModel(Base):
     price: Mapped[Float] = mapped_column(Float, nullable=False)
     quantity: Mapped[Integer] = mapped_column(Integer, nullable=False)
     direction: Mapped[String] = mapped_column(String(8), nullable=False)
+    deal = relationship('DealModel', back_populates='transactions')
 
 
 class DealModel(Base):
@@ -23,7 +24,7 @@ class DealModel(Base):
     account: Mapped[UUID] = mapped_column(UUID, nullable=False)
     ticker: Mapped[str] = mapped_column(String(32), nullable=False)
     status: Mapped[str] = mapped_column(String(16), nullable=False)
-    transaction: Mapped[UUID] = ForeignKey('InnerTransactionModel')
+    transactions = relationship('InnerTransactionModel', back_populates='deal', lazy='joined')
 
     @staticmethod
     def key_converter(key: str):
@@ -45,11 +46,16 @@ class DealModel(Base):
     def from_entity(cls, entity: domain.Deal):
         return cls(
             id=entity.uuid,
-            account=str(entity.account),
+            account=entity.account,
             ticker=entity.ticker,
             status=entity.status,
-            transaction=str(entity.transaction),
-            documents=entity.documents,
+            transactions=[InnerTransactionModel(
+                id=uuid4(),
+                price=x.price,
+                quantity=x.quantity,
+                direction=x.direction,
+                deal=entity.uuid,
+            ) for x in entity.transactions]
         )
 
 
@@ -68,6 +74,5 @@ class DealRepo(PostgresRepo):
         stmt = select(DealModel)
         stmt = self._expand_statement(stmt, filter_by, order_by, slice_from, slice_to)
         result = list(await self._session.execute(stmt))
-        print()
         print(result)
-        raise Exception
+        return result

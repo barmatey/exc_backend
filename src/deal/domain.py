@@ -1,7 +1,7 @@
 from typing import Literal, TypedDict
-from uuid import UUID
+from uuid import UUID, uuid4
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, PrivateAttr
 
 from src.base.model import Entity
 from src.core import Ticker
@@ -17,18 +17,15 @@ class InnerTransaction(BaseModel):
     model_config = ConfigDict(frozen=True)
 
 
-class Deal:
-    def __init__(
-            self,
-            account: UUID,
-            ticker: Ticker,
-            status: DealStatus,
-            transactions: list[InnerTransaction],
-    ):
-        self._account = account
-        self._ticker = ticker
-        self._status = status
-        self._transactions = transactions
+class Deal(Entity):
+    account: UUID
+    ticker: Ticker
+    status: DealStatus
+    _transactions = PrivateAttr(default_factory=list)
+
+    @property
+    def transactions(self) -> list[InnerTransaction]:
+        return self._transactions
 
     @property
     def average_price(self) -> float:
