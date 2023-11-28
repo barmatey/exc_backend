@@ -61,7 +61,7 @@ class TransactionModel(Base):
     quantity: Mapped[int] = mapped_column(Integer)
     buyer: Mapped[str] = mapped_column(String(64))
     seller: Mapped[str] = mapped_column(String(64))
-    deals: Mapped[list] = relationship(secondary=association_table, back_populates='transactions')
+    deals = relationship('DealModel', secondary=association_table, back_populates='transactions')
 
     @staticmethod
     def key_converter(key: str):

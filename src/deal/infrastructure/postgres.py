@@ -17,7 +17,7 @@ class DealModel(Base):
     status: Mapped[str] = mapped_column(String(16), nullable=False)
     weighted_price: Mapped[float] = mapped_column(Float, nullable=False)
     total_quantity: Mapped[int] = mapped_column(Integer, nullable=False)
-    transactions: Mapped[list] = relationship(secondary=association_table, back_populates="deals")
+    transactions = relationship('TransactionModel', secondary=association_table, back_populates="deals")
 
     @staticmethod
     def key_converter(key: str):
