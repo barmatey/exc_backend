@@ -5,16 +5,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects.postgresql import UUID
 
-from src.base.repo.postgres import Base, PostgresRepo
+from src.base.repo.postgres import Base, PostgresRepo, association_table
 from src.base.repo.repository import OrderBy
 from src.deal import domain
-
-association_table = Table(
-    "association_table",
-    Base.metadata,
-    Column("left_id", ForeignKey("left_table.id")),
-    Column("right_id", ForeignKey("right_table.id")),
-)
 
 
 class DealModel(Base):
@@ -24,6 +17,7 @@ class DealModel(Base):
     status: Mapped[str] = mapped_column(String(16), nullable=False)
     weighted_price: Mapped[float] = mapped_column(Float, nullable=False)
     total_quantity: Mapped[int] = mapped_column(Integer, nullable=False)
+    transactions: Mapped[list] = relationship(secondary=association_table, back_populates="deals")
 
     @staticmethod
     def key_converter(key: str):

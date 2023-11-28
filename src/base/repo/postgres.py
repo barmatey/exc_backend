@@ -2,9 +2,10 @@ from typing import Type
 from uuid import UUID
 
 import loguru
-from sqlalchemy import TIMESTAMP, func, select, update, delete, Result
+from sqlalchemy import TIMESTAMP, func, select, update, delete, Result, Table, ForeignKey
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy.testing.schema import Column
 
 from src.base.repo.repository import Repository, T, OrderBy
 
@@ -118,3 +119,11 @@ class PostgresRepo(Repository):
         stmt = delete(self._model)
         stmt = self._expand_statement(stmt, filter_by)
         _ = await self._session.execute(stmt)
+
+
+association_table = Table(
+    "association_table",
+    Base.metadata,
+    Column("trs_id", ForeignKey("transaction.id")),
+    Column("deal_id", ForeignKey("deal_table.id")),
+)
