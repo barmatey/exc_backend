@@ -16,11 +16,12 @@ class InnerTransactionModel(Base):
     price: Mapped[Float] = mapped_column(Float, nullable=False)
     quantity: Mapped[Integer] = mapped_column(Integer, nullable=False)
     direction: Mapped[String] = mapped_column(String(8), nullable=False)
+    deal_id: Mapped[UUID] = ForeignKey('DealModel')
     deal = relationship('DealModel', back_populates='transactions')
 
 
 class DealModel(Base):
-    __tablename__ = 'deal'
+    __tablename__ = 'deal_table'
     account: Mapped[UUID] = mapped_column(UUID, nullable=False)
     ticker: Mapped[str] = mapped_column(String(32), nullable=False)
     status: Mapped[str] = mapped_column(String(16), nullable=False)
