@@ -37,19 +37,9 @@ class UpdateDeal:
         raise NotImplemented
 
 
-class CreateInnerTransaction:
-    def __init__(self, repo: Repository[domain.InnerTransaction], trs: domain.InnerTransaction):
-        self._repo = repo
-        self._trs = trs
-
-    async def execute(self):
-        await self._repo.add_many([self._trs])
-
-
 class DealCommandFactory:
-    def __init__(self, deal_repo: Repository[domain.Deal], trs_repo: Repository[domain.InnerTransaction]):
+    def __init__(self, deal_repo: Repository[domain.Deal]):
         self._deal_repo = deal_repo
-        self._trs_repo = trs_repo
 
     def create_deal(self, deal: domain.Deal) -> CreateDeal:
         return CreateDeal(deal, self._deal_repo)
@@ -59,6 +49,3 @@ class DealCommandFactory:
 
     def update_deal(self, deal: domain.Deal) -> UpdateDeal:
         return UpdateDeal(deal, self._deal_repo)
-
-    def create_inner_transaction(self, trs: domain.InnerTransaction) -> CreateInnerTransaction:
-        return CreateInnerTransaction(self._trs_repo, trs)

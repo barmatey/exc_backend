@@ -119,11 +119,3 @@ class PostgresRepo(Repository):
         stmt = delete(self._model)
         stmt = self._expand_statement(stmt, filter_by)
         _ = await self._session.execute(stmt)
-
-
-association_table = Table(
-    "association_table",
-    Base.metadata,
-    Column("trs_id", ForeignKey("transaction.id")),
-    Column("deal_id", ForeignKey("deal_table.id")),
-)

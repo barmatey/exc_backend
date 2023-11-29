@@ -11,7 +11,6 @@ DealDirection = Literal['BUY', 'SELL']
 
 
 class InnerTransaction(BaseModel):
-    uuid: UUID
     direction: DealDirection
     price: float
     quantity: int
@@ -24,10 +23,8 @@ class Deal(Entity):
     status: DealStatus
     weighted_price: float
     total_quantity: int
-    transactions: list[UUID] = Field(default_factory=list)
 
     def append_transaction(self, trs: InnerTransaction):
-        self._transactions.append(trs.uuid)
         self.weighted_price += trs.price * trs.quantity
         self.total_quantity += trs.quantity
 

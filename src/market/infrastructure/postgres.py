@@ -3,7 +3,7 @@ from uuid import UUID
 from sqlalchemy import String, TIMESTAMP, Integer, Float
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from src.base.repo.postgres import Base, association_table
+from src.base.repo.postgres import Base
 from src.market import domain
 
 
@@ -61,7 +61,6 @@ class TransactionModel(Base):
     quantity: Mapped[int] = mapped_column(Integer)
     buyer: Mapped[str] = mapped_column(String(64))
     seller: Mapped[str] = mapped_column(String(64))
-    deals = relationship('DealModel', secondary=association_table, back_populates='transactions')
 
     @staticmethod
     def key_converter(key: str):
