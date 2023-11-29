@@ -1,7 +1,6 @@
 from src.deal import (
     bootstrap as deal_bootstrap,
     domain as deal_domain,
-    commands as deal_commands,
 )
 from src.account import (
     bootstrap as acc_bootstrap,
