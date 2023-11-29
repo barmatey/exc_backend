@@ -112,6 +112,15 @@ class GetManyTransactionsCommand:
         return await self._trs_repo.get_many(self._filter_by, self._order_by, self._slice_from, self._slice_to)
 
 
+class GetAccountPositionsCommand:
+    def __init__(self, trs_repo: Repository[domain.Transaction], account_uuid: UUID):
+        self._trs_repo = trs_repo
+        self._acc_uuid = account_uuid
+
+    async def execute(self) -> list[domain.Position]:
+        raise NotImplemented
+
+
 class CommandFactory:
     def __init__(
             self,
@@ -136,6 +145,9 @@ class CommandFactory:
 
     def get_market_by_ticker(self, ticker: Ticker) -> GetMarketByTickerCommand:
         return GetMarketByTickerCommand(ticker, self._order_repo, self._trs_repo)
+
+    def get_account_positions(self, acc_uuid: UUID) -> GetAccountPositionsCommand:
+        return GetAccountPositionsCommand(self._trs_repo, acc_uuid)
 
     def send_order(self, order: domain.Order) -> SendOrderCommand:
         return SendOrderCommand(order, self._order_repo, self._trs_repo, self._deal_gw, self._acc_gw, self._queue)

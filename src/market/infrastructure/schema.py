@@ -95,6 +95,22 @@ class TransactionSchema(BaseModel):
         return str(date)
 
 
+class PositionSchema(BaseModel):
+    account_uuid: UUID
+    ticker: Ticker
+    avg_price: float
+    total_quantity: int
+
+    @classmethod
+    def from_entity(cls, entity: domain.Position):
+        return cls(
+            account_uuid=entity.account_uuid,
+            ticker=entity.ticker,
+            avg_price=entity.avg_price,
+            total_quantity=entity.total_quantity,
+        )
+
+
 class MarketSchema(BaseModel):
     ticker: Ticker
     buy_level: list[tuple[float, int]]

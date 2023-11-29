@@ -43,6 +43,39 @@ class Transaction(Entity):
         return self.price * self.quantity
 
 
+class Position:
+    def __init__(
+            self,
+            account_id: UUID,
+            ticker: Ticker,
+            weighted_price: float,
+            total_quantity: int,
+    ):
+        self.account_uuid = account_id
+        self.ticker = ticker
+        self._weighted_price = weighted_price
+        self._total_quantity = total_quantity
+
+    def append_transaction(self, trs: Transaction):
+        if trs.buyer != self.account_uuid or trs.seller != self.account_uuid:
+            raise ValueError
+        if trs.ticker != self.ticker:
+            raise ValueError
+        quantity = trs.quantity if trs.buyer == self.account_uuid else -trs.quantity
+        self._weighted_price += quantity * trs.price
+        self._total_quantity += quantity
+
+    @property
+    def total_quantity(self) -> int:
+        return self._total_quantity
+
+    @property
+    def avg_price(self) -> float:
+        if self._total_quantity == 0:
+            return 0
+        return self._weighted_price / self._total_quantity
+
+
 class Market(BaseModel):
     ticker: Ticker
     _buyers: SortedDict[float, deque[Order]] = PrivateAttr(default_factory=SortedDict)
