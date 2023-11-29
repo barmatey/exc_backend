@@ -31,4 +31,6 @@ class Deal(Entity):
 
     @property
     def avg_price(self) -> float:
+        if self.total_quantity == 0:
+            return 0
         return self.weighted_price / self.total_quantity

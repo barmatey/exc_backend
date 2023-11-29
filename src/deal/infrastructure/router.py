@@ -4,7 +4,6 @@ from fastapi import APIRouter, Depends
 
 from src import db
 from src.base.repo.repository import OrderBy
-from src.core import Ticker
 from src.deal.infrastructure import bootstrap, schema
 
 router_deal = APIRouter(

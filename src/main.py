@@ -6,6 +6,7 @@ from src.market.infrastructure.router import router_market, router_order, router
 from src.account.infrastructure.router import router_account
 from src.commodity.infrastructure.router import router_commodity
 from src.auth.router import router_auth
+from src.deal.infrastructure.router import router_deal
 
 app = FastAPI()
 
@@ -23,6 +24,7 @@ app.add_middleware(
 )
 
 app.include_router(router_market)
+app.include_router(router_deal)
 app.include_router(router_account)
 app.include_router(router_commodity)
 app.include_router(router_order)
