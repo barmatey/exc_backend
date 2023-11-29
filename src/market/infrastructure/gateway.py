@@ -30,11 +30,35 @@ class DealGatewayM(market_handlers.DealGateway):
                 total_quantity=0,
             )
             deal.append_transaction(
-                deal_domain.InnerTransaction(direction='BUY', price=trs.price, quantity=trs.quantity, uuid=trs.uuid)
+                deal_domain.InnerTransaction(direction='BUY', price=trs.price, quantity=trs.quantity)
             )
             await factory.create_deal(deal).execute()
         else:
-            raise NotImplemented
+            deal = deals.pop()
+            deal.append_transaction(
+                deal_domain.InnerTransaction(direction='BUY', price=trs.price, quantity=trs.quantity)
+            )
+            await factory.update_deal(deal).execute()
+
+        deals = (await factory.get_many_deals({'ticker': trs.ticker, 'account': trs.seller}).execute())
+        if len(deals) == 0:
+            deal = deal_domain.Deal(
+                account=trs.seller,
+                ticker=trs.ticker,
+                status='PROCESSING',
+                weighted_price=0,
+                total_quantity=0,
+            )
+            deal.append_transaction(
+                deal_domain.InnerTransaction(direction='SELL', price=trs.price, quantity=trs.quantity)
+            )
+            await factory.create_deal(deal).execute()
+        else:
+            deal = deals.pop()
+            deal.append_transaction(
+                deal_domain.InnerTransaction(direction='SELL', price=trs.price, quantity=trs.quantity)
+            )
+            await factory.update_deal(deal).execute()
 
 
 class AccountGatewayM(market_handlers.AccountGateway):

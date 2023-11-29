@@ -25,8 +25,9 @@ class Deal(Entity):
     total_quantity: int
 
     def append_transaction(self, trs: InnerTransaction):
-        self.weighted_price += trs.price * trs.quantity
-        self.total_quantity += trs.quantity
+        quantity = trs.quantity if trs.direction == 'BUY' else -trs.quantity
+        self.weighted_price += trs.price * quantity
+        self.total_quantity += quantity
 
     @property
     def avg_price(self) -> float:
