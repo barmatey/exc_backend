@@ -30,8 +30,9 @@ class ConnectionManager:
         self.active_connections[key].remove(websocket)
 
     async def broadcast(self, key, message: dict):
-        for connection in self.active_connections[key]:
-            await connection.send_json(message)
+        if self.active_connections.get(key) is not None:
+            for connection in self.active_connections[key]:
+                await connection.send_json(message)
 
     @staticmethod
     async def send_personal_message(message: dict, websocket: WebSocket):
@@ -41,6 +42,7 @@ class ConnectionManager:
 market_manager = ConnectionManager()
 trs_manager = ConnectionManager()
 order_manager = ConnectionManager()
+position_manager = ConnectionManager()
 
 router_market = APIRouter(
     prefix='/market',
@@ -49,7 +51,7 @@ router_market = APIRouter(
 
 
 @router_market.websocket("/ws/{ticker}")
-async def websocket_endpoint(websocket: WebSocket, ticker: str):
+async def market_websocket_endpoint(websocket: WebSocket, ticker: str):
     market = MarketSchema.from_entity(await get_market(ticker))
     await market_manager.connect(ticker, websocket)
     await market_manager.send_personal_message(market.model_dump(), websocket)
@@ -58,6 +60,30 @@ async def websocket_endpoint(websocket: WebSocket, ticker: str):
             _data = await websocket.receive_text()
     except WebSocketDisconnect:
         market_manager.disconnect(ticker, websocket)
+
+
+router_position = APIRouter(
+    prefix='/position',
+    tags=['Position'],
+)
+
+
+@router_position.websocket("/ws/{account_uuid}")
+async def account_websocket_endpoint(websocket: WebSocket, account_uuid: str):
+    await position_manager.connect(account_uuid, websocket)
+    try:
+        while True:
+            _data = await websocket.receive_text()
+    except WebSocketDisconnect:
+        position_manager.disconnect(account_uuid, websocket)
+
+
+@router_position.get("/{account_uuid}")
+async def get_account_positions(account_uuid: UUID, get_as=Depends(db.get_as)) -> list[PositionSchema]:
+    async with get_as as session:
+        boot = Bootstrap(session)
+        positions = await boot.get_command_factory().get_account_positions(account_uuid).execute()
+        return [PositionSchema.from_entity(x) for x in positions]
 
 
 router_order = APIRouter(
@@ -84,9 +110,13 @@ async def create_order(order: OrderSchema, get_as=Depends(db.get_as)) -> OrderSc
         market = await cmd.execute()
         await boot.get_eventbus().run()
         await session.commit()
+
         await market_manager.broadcast(order.ticker, MarketSchema.from_entity(market).model_dump())
         for trs in market.transactions:
-            await trs_manager.broadcast(order.ticker, TransactionSchema.from_entity(trs).model_dump())
+            data = TransactionSchema.from_entity(trs).model_dump()
+            await trs_manager.broadcast(order.ticker, data)
+            await position_manager.broadcast(trs.buyer, data)
+            await position_manager.broadcast(trs.seller, data)
         for order in market.orders:
             await order_manager.broadcast(str(order.account), OrderSchema.from_entity(order).model_dump())
         return order

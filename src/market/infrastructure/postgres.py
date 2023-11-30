@@ -1,4 +1,4 @@
-from uuid import UUID
+from sqlalchemy.dialects.postgresql import UUID
 
 from sqlalchemy import String, TIMESTAMP, Integer, Float
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -59,8 +59,8 @@ class TransactionModel(Base):
     date: Mapped[TIMESTAMP] = mapped_column(TIMESTAMP(timezone=True))
     price: Mapped[float] = mapped_column(Float)
     quantity: Mapped[int] = mapped_column(Integer)
-    buyer: Mapped[str] = mapped_column(String(64))
-    seller: Mapped[str] = mapped_column(String(64))
+    buyer: Mapped[UUID] = mapped_column(UUID)
+    seller: Mapped[UUID] = mapped_column(UUID)
 
     @staticmethod
     def key_converter(key: str):

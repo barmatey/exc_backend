@@ -48,8 +48,8 @@ class Position:
             self,
             account_id: UUID,
             ticker: Ticker,
-            weighted_price: float,
-            total_quantity: int,
+            weighted_price: float = 0,
+            total_quantity: int = 0,
     ):
         self.account_uuid = account_id
         self.ticker = ticker

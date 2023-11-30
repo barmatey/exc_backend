@@ -116,9 +116,26 @@ class GetAccountPositionsCommand:
     def __init__(self, trs_repo: Repository[domain.Transaction], account_uuid: UUID):
         self._trs_repo = trs_repo
         self._acc_uuid = account_uuid
+        self._positions: dict[Ticker, domain.Position] = {}
+
+    def __get_or_create_pos(self, ticker: Ticker):
+        if self._positions.get(ticker) is None:
+            self._positions[ticker] = domain.Position(self._acc_uuid, ticker)
+        return self._positions[ticker]
 
     async def execute(self) -> list[domain.Position]:
-        raise NotImplemented
+        one = await self._trs_repo.get_many({"buyer": self._acc_uuid})
+        two = await self._trs_repo.get_many({"seller": self._acc_uuid})
+
+        for trs in one:
+            position = self.__get_or_create_pos(trs.ticker)
+            position.append_transaction(trs)
+
+        for trs in two:
+            position = self.__get_or_create_pos(trs.ticker)
+            position.append_transaction(trs)
+
+        return list(self._positions.values())
 
 
 class CommandFactory:
