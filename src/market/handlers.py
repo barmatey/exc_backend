@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
 from uuid import UUID
 
+from loguru import logger
+
 from src.base.repo import Repository
 from src.base import eventbus
 from . import domain
@@ -135,7 +137,7 @@ class GetAccountPositionsCommand:
             position = self.__get_or_create_pos(trs.ticker)
             position.append_transaction(trs)
 
-        return list(self._positions.values())
+        return list(filter(lambda x: x.total_quantity != 0, self._positions.values()))
 
 
 class CommandFactory:

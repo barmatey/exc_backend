@@ -61,8 +61,11 @@ class Position:
             raise ValueError
         if trs.ticker != self.ticker:
             raise ValueError
+        if trs.buyer == trs.seller:
+            return
+
         quantity = trs.quantity if trs.buyer == self.account_uuid else -trs.quantity
-        self._weighted_price += quantity * trs.price
+        self._weighted_price = self._weighted_price + quantity * trs.price
         self._total_quantity += quantity
 
     @property
