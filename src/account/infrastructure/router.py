@@ -20,6 +20,16 @@ async def create_account(data: schema.AccountSchema, get_as=Depends(db.get_as)) 
         return data
 
 
+@router_account.post("/from-user-uuid")
+async def create_account_from_user_uuid(user_uuid: UUID, get_as=Depends(db.get_as)) -> schema.AccountSchema:
+    async with get_as as session:
+        boot = bootstrap.Bootstrap(session)
+        account = schema.AccountSchema(uuid=user_uuid, cash=100_000, buy_deals_amount=0, sell_deals_amount=0)
+        await boot.get_command_factory().create_account(account.to_entity()).execute()
+        await session.commit()
+        return account
+
+
 @router_account.get("/{account_uuid}")
 async def get_account(account_uuid: UUID, get_as=Depends(db.get_as)) -> schema.AccountSchema:
     async with get_as as session:

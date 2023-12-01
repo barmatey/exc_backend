@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from sqlalchemy import String, TIMESTAMP, Integer, Float, JSON
+from sqlalchemy import String, TIMESTAMP, Integer, Float, JSON, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
 
 from src.base.repo.postgres import Base
