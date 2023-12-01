@@ -2,17 +2,11 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends
 from loguru import logger
 
 from src import db
+from src.auth import User, current_active_user
+from src.base.repo.repository import OrderBy
 
 from .schema import *
 from .bootstrap import Bootstrap
-from ...base.repo.repository import OrderBy
-
-
-async def get_market(ticker: Ticker) -> domain.Market:
-    async with db.get_as() as session:
-        boot = Bootstrap(session)
-        market = await boot.get_command_factory().get_market_by_ticker(ticker).execute()
-        return market
 
 
 class ConnectionManager:
@@ -50,6 +44,13 @@ router_market = APIRouter(
 )
 
 
+async def get_market(ticker: Ticker) -> domain.Market:
+    async with db.get_as() as session:
+        boot = Bootstrap(session)
+        market = await boot.get_command_factory().get_market_by_ticker(ticker).execute()
+        return market
+
+
 @router_market.websocket("/ws/{ticker}")
 async def market_websocket_endpoint(websocket: WebSocket, ticker: str):
     market = MarketSchema.from_entity(await get_market(ticker))
@@ -79,10 +80,13 @@ async def account_websocket_endpoint(websocket: WebSocket, account_uuid: str):
 
 
 @router_position.get("/{account_uuid}")
-async def get_account_positions(account_uuid: UUID, get_as=Depends(db.get_as)) -> list[PositionSchema]:
+async def get_account_positions(
+        user: User = Depends(current_active_user),
+        get_as=Depends(db.get_as),
+) -> list[PositionSchema]:
     async with get_as as session:
         boot = Bootstrap(session)
-        positions = await boot.get_command_factory().get_account_positions(account_uuid).execute()
+        positions = await boot.get_command_factory().get_account_positions(user.id).execute()
         return [PositionSchema.from_entity(x) for x in positions]
 
 
@@ -103,7 +107,11 @@ async def order_websocket_endpoint(websocket: WebSocket, account_uuid: str):
 
 
 @router_order.post("/")
-async def create_order(order: OrderSchema, get_as=Depends(db.get_as)) -> OrderSchema:
+async def create_order(
+        order: OrderSchema,
+        user: User = Depends(current_active_user),
+        get_as=Depends(db.get_as)
+) -> OrderSchema:
     async with get_as as session:
         boot = Bootstrap(session)
         cmd = boot.get_command_factory().send_order(order.to_entity())
@@ -123,17 +131,24 @@ async def create_order(order: OrderSchema, get_as=Depends(db.get_as)) -> OrderSc
 
 
 @router_order.get("/{account_uuid}")
-async def get_account_orders(account_uuid: UUID, get_as=Depends(db.get_as)) -> list[OrderSchema]:
+async def get_account_orders(
+        user: User = Depends(current_active_user),
+        get_as=Depends(db.get_as),
+) -> list[OrderSchema]:
     async with get_as as session:
         boot = Bootstrap(session)
-        cmd = boot.get_command_factory().get_many_orders({"account.uuid": str(account_uuid)})
+        cmd = boot.get_command_factory().get_many_orders({"account.uuid": str(user.id)})
         orders = await cmd.execute()
         return [OrderSchema.from_entity(x) for x in orders]
 
 
 @router_order.patch("/cancel")
-async def cancel_order(order: OrderSchema):
-    async with db.get_as() as session:
+async def cancel_order(
+        order: OrderSchema,
+        _user: User = Depends(current_active_user),
+        get_as=Depends(db.get_as),
+):
+    async with get_as as session:
         order.status = 'CANCELED'
         boot = Bootstrap(session)
         market = await boot.get_command_factory().cancel_order(order.to_entity()).execute()
@@ -160,11 +175,14 @@ async def trs_websocket_endpoint(websocket: WebSocket, ticker: str):
 
 
 @router_transaction.get("/{account_uuid}")
-async def get_account_transactions(account_uuid: UUID, get_as=Depends(db.get_as)) -> list[TransactionSchema]:
+async def get_account_transactions(
+        user: User = Depends(current_active_user),
+        get_as=Depends(db.get_as),
+) -> list[TransactionSchema]:
     async with get_as as session:
         boot = Bootstrap(session)
-        one = await boot.get_command_factory().get_many_transactions({'buyer.uuid': str(account_uuid)}).execute()
-        two = await boot.get_command_factory().get_many_transactions({'seller.uuid': str(account_uuid)}).execute()
+        one = await boot.get_command_factory().get_many_transactions({'buyer.uuid': str(user.id)}).execute()
+        two = await boot.get_command_factory().get_many_transactions({'seller.uuid': str(user.id)}).execute()
         transactions = one + two
         return [TransactionSchema.from_entity(x) for x in transactions]
 
@@ -176,6 +194,7 @@ async def get_many_transactions(
         slice_to: int = None,
         order_by: str = None,
         asc: bool = True,
+        _user: User = Depends(current_active_user),
         get_as=Depends(db.get_as),
 ):
     filter_by = {'ticker': ticker} if ticker else None
